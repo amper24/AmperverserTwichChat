@@ -33,11 +33,9 @@ body {
     backdrop-filter: none;
     border: 3px solid #9146ff;
     border-radius: 10px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transition: all 0.3s ease;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -46,7 +44,6 @@ body {
 
 .chat-container.no-border {
     border: none;
-    box-shadow: none;
 }
 
 .chat-container.no-background {
@@ -103,7 +100,6 @@ body {
     white-space: pre-wrap;
     opacity: 1;
     transform: translateX(0);
-    transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
 /* Класс для сообщений без анимации */
@@ -521,7 +517,6 @@ body {
     margin-right: 0.2em;
     display: inline-block;
     vertical-align: baseline;
-    transition: all 0.2s ease;
     object-fit: contain;
     flex-shrink: 0;
 }
@@ -568,15 +563,10 @@ body {
     vertical-align: middle;
     margin: 0 0.1em;
     display: inline-block;
-    transition: all 0.2s ease;
     object-fit: contain;
     flex-shrink: 0;
 }
 
-.emote:hover {
-    transform: scale(1.1);
-    filter: brightness(1.2);
-}
 
 .message .text {
     color: inherit;
@@ -776,17 +766,6 @@ body {
     }
 }
 
-/* Эффекты при наведении */
-.chat-container:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
-}
-
-.message:hover {
-    background: rgba(255, 255, 255, 0.15);
-    transform: translateX(5px);
-    transition: all 0.2s ease;
-}
 
 /* Стили для стандартных эмодзи (смайликов) */
 img.emoji {
@@ -852,14 +831,8 @@ img.emoji {
 .setup-btn.primary {
     background: linear-gradient(135deg, #9146ff, #7c3aed);
     color: white;
-    box-shadow: 0 4px 15px rgba(145, 70, 255, 0.3);
 }
 
-.setup-btn.primary:hover {
-    background: linear-gradient(135deg, #7c3aed, #6d28d9);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(145, 70, 255, 0.4);
-}
 
 .setup-btn.secondary {
     background: rgba(255, 255, 255, 0.1);
@@ -867,10 +840,6 @@ img.emoji {
     border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
-.setup-btn.secondary:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-2px);
-}
 
 .setup-info {
     text-align: left;

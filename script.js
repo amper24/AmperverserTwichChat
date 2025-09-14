@@ -25,6 +25,9 @@ class TwitchChat {
             borderColor: '#9146ff',
             borderRadius: 10,
             hideBorder: false,
+            enableGlow: false,
+            glowColor: '#9146ff',
+            glowIntensity: 20,
             backgroundImage: '',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
@@ -248,29 +251,48 @@ class TwitchChat {
         if (urlParams.get('borderColor')) this.settings.borderColor = urlParams.get('borderColor');
         if (urlParams.get('borderRadius')) this.settings.borderRadius = parseInt(urlParams.get('borderRadius'));
         if (urlParams.has('hideBorder')) this.settings.hideBorder = urlParams.get('hideBorder') === 'true';
+        if (urlParams.has('enableGlow')) this.settings.enableGlow = urlParams.get('enableGlow') === 'true';
+        if (urlParams.get('glowColor')) this.settings.glowColor = urlParams.get('glowColor');
+        if (urlParams.get('glowIntensity')) this.settings.glowIntensity = parseInt(urlParams.get('glowIntensity'));
+        
+        // Настройки фона
         if (urlParams.get('backgroundImage')) {
             this.settings.backgroundImage = await this.loadImageSafely(urlParams.get('backgroundImage'));
         }
         if (urlParams.get('backgroundSize')) this.settings.backgroundSize = urlParams.get('backgroundSize');
         if (urlParams.get('backgroundPosition')) this.settings.backgroundPosition = urlParams.get('backgroundPosition');
+        if (urlParams.get('backgroundOpacity')) this.settings.backgroundOpacity = parseInt(urlParams.get('backgroundOpacity'));
+        if (urlParams.get('backgroundColor')) this.settings.backgroundColor = urlParams.get('backgroundColor');
+        if (urlParams.get('backgroundGradient')) this.settings.backgroundGradient = urlParams.get('backgroundGradient');
+        if (urlParams.get('gradientColor1')) this.settings.gradientColor1 = urlParams.get('gradientColor1');
+        if (urlParams.get('gradientColor2')) this.settings.gradientColor2 = urlParams.get('gradientColor2');
+        if (urlParams.get('gradientDirection')) this.settings.gradientDirection = urlParams.get('gradientDirection');
         if (urlParams.has('hideBackground')) this.settings.hideBackground = urlParams.get('hideBackground') === 'true';
+        
+        // Настройки сообщений
         if (urlParams.has('fadeMessages')) this.settings.fadeMessages = urlParams.get('fadeMessages') === 'true';
         if (urlParams.has('messageAlignment')) this.settings.messageAlignment = urlParams.get('messageAlignment');
         if (urlParams.has('borderMode')) this.settings.borderMode = urlParams.get('borderMode');
         if (urlParams.has('borderAlignment')) this.settings.borderAlignment = urlParams.get('borderAlignment');
         if (urlParams.has('chatDirection')) this.settings.chatDirection = urlParams.get('chatDirection');
+        
+        // Настройки анимаций
         if (urlParams.get('appearAnimation')) this.settings.appearAnimation = urlParams.get('appearAnimation');
         if (urlParams.get('disappearAnimation')) this.settings.disappearAnimation = urlParams.get('disappearAnimation');
-        // Старый параметр animationDuration удален
-        // Новые параметры анимаций
         if (urlParams.get('appearDuration')) this.settings.appearDuration = parseInt(urlParams.get('appearDuration'));
         if (urlParams.get('appearDelay')) this.settings.appearDelay = parseInt(urlParams.get('appearDelay'));
         if (urlParams.get('disappearDuration')) this.settings.disappearDuration = parseInt(urlParams.get('disappearDuration'));
         if (urlParams.get('messageDisplayTime')) this.settings.messageDisplayTime = parseFloat(urlParams.get('messageDisplayTime'));
         if (urlParams.get('staggerAnimations')) this.settings.staggerAnimations = urlParams.get('staggerAnimations') === 'true';
         if (urlParams.get('staggerDelay')) this.settings.staggerDelay = parseInt(urlParams.get('staggerDelay'));
+        
+        // Настройки фона сообщений
         if (urlParams.get('messageBackgroundColor')) this.settings.messageBackgroundColor = urlParams.get('messageBackgroundColor');
         if (urlParams.get('messageBackgroundOpacity')) this.settings.messageBackgroundOpacity = parseInt(urlParams.get('messageBackgroundOpacity'));
+        if (urlParams.get('messageBackgroundGradient')) this.settings.messageBackgroundGradient = urlParams.get('messageBackgroundGradient');
+        if (urlParams.get('messageGradientColor1')) this.settings.messageGradientColor1 = urlParams.get('messageGradientColor1');
+        if (urlParams.get('messageGradientColor2')) this.settings.messageGradientColor2 = urlParams.get('messageGradientColor2');
+        if (urlParams.get('messageGradientDirection')) this.settings.messageGradientDirection = urlParams.get('messageGradientDirection');
         if (urlParams.get('messageBackgroundImage1')) {
             this.settings.messageBackgroundImage1 = await this.loadImageSafely(urlParams.get('messageBackgroundImage1'));
         }
@@ -281,6 +303,7 @@ class TwitchChat {
         if (urlParams.get('messageBgPosition1')) this.settings.messageBgPosition1 = urlParams.get('messageBgPosition1');
         if (urlParams.get('messageBgSize2')) this.settings.messageBgSize2 = urlParams.get('messageBgSize2');
         if (urlParams.get('messageBgPosition2')) this.settings.messageBgPosition2 = urlParams.get('messageBgPosition2');
+        
         // Настройки значков
         if (urlParams.has('showUserBadges')) {
             this.settings.showUserBadges = urlParams.get('showUserBadges') === 'true';
@@ -288,6 +311,7 @@ class TwitchChat {
         if (urlParams.has('showChannelBadges')) {
             this.settings.showChannelBadges = urlParams.get('showChannelBadges') === 'true';
         }
+        
         // Настройки шрифтов
         if (urlParams.get('fontFamily')) this.settings.fontFamily = urlParams.get('fontFamily');
         if (urlParams.get('fontSize')) this.settings.fontSize = parseInt(urlParams.get('fontSize'));
@@ -295,6 +319,8 @@ class TwitchChat {
         if (urlParams.get('lineHeight')) this.settings.lineHeight = parseFloat(urlParams.get('lineHeight'));
         if (urlParams.get('letterSpacing')) this.settings.letterSpacing = parseFloat(urlParams.get('letterSpacing'));
         if (urlParams.get('fontColor')) this.settings.fontColor = urlParams.get('fontColor');
+        
+        // Настройки чата
         if (urlParams.get('maxMessages')) this.settings.maxMessages = parseInt(urlParams.get('maxMessages'));
         if (urlParams.get('messageSpeed')) this.settings.messageSpeed = parseInt(urlParams.get('messageSpeed'));
         if (urlParams.get('chatWidth')) this.settings.chatWidth = parseInt(urlParams.get('chatWidth'));
@@ -332,6 +358,15 @@ class TwitchChat {
         }
         
         this.chatContainer.style.borderRadius = this.settings.borderRadius + 'px';
+        
+        // Применяем свечение
+        if (this.settings.enableGlow) {
+            const glowColor = this.settings.glowColor;
+            const intensity = this.settings.glowIntensity;
+            this.chatContainer.style.boxShadow = `0 0 ${intensity}px ${glowColor}, 0 0 ${intensity * 2}px ${glowColor}`;
+        } else {
+            this.chatContainer.style.boxShadow = '';
+        }
         
         // Фон
         if (this.settings.hideBackground) {

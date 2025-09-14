@@ -59,6 +59,24 @@
                         <input type="checkbox" id="hide-border" class="checkbox-input">
                     </div>
                     
+                    <h3>✨ Настройки свечения</h3>
+                    <div class="setting-item checkbox-item">
+                        <label for="enable-glow">Включить свечение:</label>
+                        <input type="checkbox" id="enable-glow" class="checkbox-input">
+                    </div>
+                    
+                    <div class="setting-item" id="glow-settings" style="display: none;">
+                        <label for="glow-color">Цвет свечения:</label>
+                        <input type="color" id="glow-color" value="#9146ff">
+                    </div>
+                    
+                    <div class="setting-item" id="glow-intensity-settings" style="display: none;">
+                        <label for="glow-intensity">Интенсивность свечения:</label>
+                        <input type="range" id="glow-intensity" min="5" max="50" value="20">
+                        <input type="number" id="glow-intensity-number" min="5" max="50" value="20" class="number-input">
+                        <span id="glow-intensity-value">20px</span>
+                    </div>
+                    
                     <h3>🖼️ Настройки фона</h3>
                     <div class="setting-item">
                         <label for="background-image">Фоновое изображение:</label>

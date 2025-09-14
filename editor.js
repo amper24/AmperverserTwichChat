@@ -16,6 +16,9 @@ class ChatEditor {
             borderColor: '#9146ff',
             borderRadius: 10,
             hideBorder: false,
+            enableGlow: false,
+            glowColor: '#9146ff',
+            glowIntensity: 20,
             backgroundImage: '',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
@@ -104,6 +107,13 @@ class ChatEditor {
             borderRadiusNumber: document.getElementById('border-radius-number'),
             borderRadiusValue: document.getElementById('border-radius-value'),
             hideBorder: document.getElementById('hide-border'),
+            enableGlow: document.getElementById('enable-glow'),
+            glowColor: document.getElementById('glow-color'),
+            glowIntensity: document.getElementById('glow-intensity'),
+            glowIntensityNumber: document.getElementById('glow-intensity-number'),
+            glowIntensityValue: document.getElementById('glow-intensity-value'),
+            glowSettings: document.getElementById('glow-settings'),
+            glowIntensitySettings: document.getElementById('glow-intensity-settings'),
             backgroundImage: document.getElementById('background-image'),
             backgroundSize: document.getElementById('background-size'),
             backgroundPosition: document.getElementById('background-position'),
@@ -310,6 +320,32 @@ class ChatEditor {
         
         this.elements.hideBorder.addEventListener('change', (e) => {
             this.settings.hideBorder = e.target.checked;
+            this.updatePreview();
+        });
+        
+        // Настройки свечения
+        this.elements.enableGlow.addEventListener('change', (e) => {
+            this.settings.enableGlow = e.target.checked;
+            this.toggleGlowSettings();
+            this.updatePreview();
+        });
+        
+        this.elements.glowColor.addEventListener('input', (e) => {
+            this.settings.glowColor = e.target.value;
+            this.updatePreview();
+        });
+        
+        this.elements.glowIntensity.addEventListener('input', (e) => {
+            this.settings.glowIntensity = parseInt(e.target.value);
+            this.elements.glowIntensityNumber.value = e.target.value;
+            this.elements.glowIntensityValue.textContent = e.target.value + 'px';
+            this.updatePreview();
+        });
+        
+        this.elements.glowIntensityNumber.addEventListener('input', (e) => {
+            this.settings.glowIntensity = parseInt(e.target.value);
+            this.elements.glowIntensity.value = e.target.value;
+            this.elements.glowIntensityValue.textContent = e.target.value + 'px';
             this.updatePreview();
         });
         
@@ -1103,6 +1139,16 @@ class ChatEditor {
         this.elements.obsUrl.href = chatURL;
     }
     
+    toggleGlowSettings() {
+        if (this.settings.enableGlow) {
+            this.elements.glowSettings.style.display = 'block';
+            this.elements.glowIntensitySettings.style.display = 'block';
+        } else {
+            this.elements.glowSettings.style.display = 'none';
+            this.elements.glowIntensitySettings.style.display = 'none';
+        }
+    }
+    
     applyPreviewSettings() {
         const container = this.elements.previewChatContainer;
         
@@ -1116,6 +1162,15 @@ class ChatEditor {
         }
         
         container.style.borderRadius = this.settings.borderRadius + 'px';
+        
+        // Применяем свечение
+        if (this.settings.enableGlow) {
+            const glowColor = this.settings.glowColor;
+            const intensity = this.settings.glowIntensity;
+            container.style.boxShadow = `0 0 ${intensity}px ${glowColor}, 0 0 ${intensity * 2}px ${glowColor}`;
+        } else {
+            container.style.boxShadow = '';
+        }
         
         // Применяем настройки фона
         if (this.settings.hideBackground) {
@@ -1876,46 +1931,72 @@ class ChatEditor {
         
         // Добавляем все настройки как параметры URL
         if (this.settings.channel) params.set('channel', this.settings.channel);
+        
+        // Настройки рамки
         if (this.settings.borderWidth !== 3) params.set('borderWidth', this.settings.borderWidth);
         if (this.settings.borderColor !== '#9146ff') params.set('borderColor', this.settings.borderColor);
         if (this.settings.borderRadius !== 10) params.set('borderRadius', this.settings.borderRadius);
         params.set('hideBorder', this.settings.hideBorder);
+        if (this.settings.enableGlow) params.set('enableGlow', this.settings.enableGlow);
+        if (this.settings.glowColor !== '#9146ff') params.set('glowColor', this.settings.glowColor);
+        if (this.settings.glowIntensity !== 20) params.set('glowIntensity', this.settings.glowIntensity);
+        
+        // Настройки фона
         if (this.settings.backgroundImage) params.set('backgroundImage', this.settings.backgroundImage);
         if (this.settings.backgroundSize !== 'cover') params.set('backgroundSize', this.settings.backgroundSize);
         if (this.settings.backgroundPosition !== 'center') params.set('backgroundPosition', this.settings.backgroundPosition);
+        if (this.settings.backgroundOpacity !== 100) params.set('backgroundOpacity', this.settings.backgroundOpacity);
+        if (this.settings.backgroundColor !== '#1a1a2e') params.set('backgroundColor', this.settings.backgroundColor);
+        if (this.settings.backgroundGradient !== 'none') params.set('backgroundGradient', this.settings.backgroundGradient);
+        if (this.settings.gradientColor1 !== '#1a1a2e') params.set('gradientColor1', this.settings.gradientColor1);
+        if (this.settings.gradientColor2 !== '#16213e') params.set('gradientColor2', this.settings.gradientColor2);
+        if (this.settings.gradientDirection !== 'to right') params.set('gradientDirection', this.settings.gradientDirection);
         params.set('hideBackground', this.settings.hideBackground);
+        
+        // Настройки сообщений
         params.set('fadeMessages', this.settings.fadeMessages);
         params.set('messageAlignment', this.settings.messageAlignment);
         params.set('borderMode', this.settings.borderMode);
         params.set('borderAlignment', this.settings.borderAlignment);
         params.set('chatDirection', this.settings.chatDirection);
-        if (this.settings.appearAnimation !== 'slide') params.set('appearAnimation', this.settings.appearAnimation);
+        
+        // Настройки анимаций
+        if (this.settings.appearAnimation !== 'none') params.set('appearAnimation', this.settings.appearAnimation);
         if (this.settings.disappearAnimation !== 'fade-out') params.set('disappearAnimation', this.settings.disappearAnimation);
-        // Старый параметр animationDuration удален
-        // Новые параметры анимаций
-        if (this.settings.appearDuration !== 500) params.set('appearDuration', this.settings.appearDuration);
+        if (this.settings.appearDuration !== 1000) params.set('appearDuration', this.settings.appearDuration);
         if (this.settings.appearDelay !== 0) params.set('appearDelay', this.settings.appearDelay);
         if (this.settings.disappearDuration !== 500) params.set('disappearDuration', this.settings.disappearDuration);
         if (this.settings.messageDisplayTime !== 10) params.set('messageDisplayTime', this.settings.messageDisplayTime);
         if (this.settings.staggerAnimations) params.set('staggerAnimations', this.settings.staggerAnimations);
         if (this.settings.staggerDelay !== 100) params.set('staggerDelay', this.settings.staggerDelay);
+        
+        // Настройки фона сообщений
         if (this.settings.messageBackgroundColor !== '#1a1a1a') params.set('messageBackgroundColor', this.settings.messageBackgroundColor);
         if (this.settings.messageBackgroundOpacity !== 80) params.set('messageBackgroundOpacity', this.settings.messageBackgroundOpacity);
+        if (this.settings.messageBackgroundGradient !== 'none') params.set('messageBackgroundGradient', this.settings.messageBackgroundGradient);
+        if (this.settings.messageGradientColor1 !== '#1a1a1a') params.set('messageGradientColor1', this.settings.messageGradientColor1);
+        if (this.settings.messageGradientColor2 !== '#2a2a2a') params.set('messageGradientColor2', this.settings.messageGradientColor2);
+        if (this.settings.messageGradientDirection !== 'to right') params.set('messageGradientDirection', this.settings.messageGradientDirection);
         if (this.settings.messageBackgroundImage1) params.set('messageBackgroundImage1', this.settings.messageBackgroundImage1);
         if (this.settings.messageBackgroundImage2) params.set('messageBackgroundImage2', this.settings.messageBackgroundImage2);
         if (this.settings.messageBgSize1 !== 'cover') params.set('messageBgSize1', this.settings.messageBgSize1);
         if (this.settings.messageBgPosition1 !== 'center') params.set('messageBgPosition1', this.settings.messageBgPosition1);
         if (this.settings.messageBgSize2 !== 'cover') params.set('messageBgSize2', this.settings.messageBgSize2);
         if (this.settings.messageBgPosition2 !== 'center') params.set('messageBgPosition2', this.settings.messageBgPosition2);
+        
         // Настройки значков
         params.set('showUserBadges', this.settings.showUserBadges);
         params.set('showChannelBadges', this.settings.showChannelBadges);
+        
         // Настройки шрифтов
         if (this.settings.fontFamily !== 'Arial, sans-serif') params.set('fontFamily', this.settings.fontFamily);
         if (this.settings.fontSize !== 14) params.set('fontSize', this.settings.fontSize);
         if (this.settings.fontWeight !== 400) params.set('fontWeight', this.settings.fontWeight);
         if (this.settings.lineHeight !== 1.2) params.set('lineHeight', this.settings.lineHeight);
         if (this.settings.letterSpacing !== 0) params.set('letterSpacing', this.settings.letterSpacing);
+        if (this.settings.fontColor !== '#ffffff') params.set('fontColor', this.settings.fontColor);
+        
+        // Настройки чата
         if (this.settings.maxMessages !== 100) params.set('maxMessages', this.settings.maxMessages);
         if (this.settings.messageSpeed !== 300) params.set('messageSpeed', this.settings.messageSpeed);
         if (this.settings.chatWidth !== 800) params.set('chatWidth', this.settings.chatWidth);
@@ -1999,6 +2080,12 @@ class ChatEditor {
         this.elements.borderRadiusNumber.value = this.settings.borderRadius;
         this.elements.borderRadiusValue.textContent = this.settings.borderRadius + 'px';
         this.elements.hideBorder.checked = this.settings.hideBorder;
+        this.elements.enableGlow.checked = this.settings.enableGlow;
+        this.elements.glowColor.value = this.settings.glowColor;
+        this.elements.glowIntensity.value = this.settings.glowIntensity;
+        this.elements.glowIntensityNumber.value = this.settings.glowIntensity;
+        this.elements.glowIntensityValue.textContent = this.settings.glowIntensity + 'px';
+        this.toggleGlowSettings();
         
         // Фон
         this.elements.backgroundImage.value = this.settings.backgroundImage;
