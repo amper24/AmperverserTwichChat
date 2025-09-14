@@ -952,3 +952,35 @@ img.emoji {
     transform: translateZ(0);
     will-change: auto;
 }
+
+/* Fallback стили для градиентов сообщений */
+.message {
+    /* Fallback для браузеров без поддержки градиентов */
+    background-color: var(--message-fallback-bg, #1a1a1a);
+}
+
+/* Поддержка conic градиентов для современных браузеров */
+@supports (background: conic-gradient(from 0deg, red, blue)) {
+    .message {
+        background: var(--message-gradient, none);
+    }
+}
+
+/* Fallback для OBS и старых браузеров */
+.message[style*="conic-gradient"] {
+    background: linear-gradient(45deg, var(--message-gradient-color-1, #1a1a1a), var(--message-gradient-color-2, #2a2a2a)) !important;
+}
+
+/* Дополнительные стили для лучшей поддержки градиентов */
+.message {
+    /* Обеспечиваем правильное отображение градиентов */
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+}
+
+/* Специальные стили для conic градиентов */
+@supports (background: conic-gradient(from 0deg, red, blue)) {
+    .message[style*="conic-gradient"] {
+        background-attachment: scroll;
+    }
+}

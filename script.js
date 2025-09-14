@@ -2241,11 +2241,15 @@ class TwitchChat {
             );
             backgrounds.push(gradient);
             
-            // Устанавливаем CSS переменные для fallback
+            // Устанавливаем CSS переменные для fallback и OBS совместимости
             messageElement.style.setProperty('--message-gradient-color-1', this.settings.messageGradientColor1);
             messageElement.style.setProperty('--message-gradient-color-2', this.settings.messageGradientColor2);
             messageElement.style.setProperty('--message-gradient-direction', this.settings.messageGradientDirection);
             messageElement.style.setProperty('--message-fallback-bg', this.settings.messageGradientColor1);
+            messageElement.style.setProperty('--message-gradient', gradient);
+            
+            // Дополнительный fallback для OBS
+            messageElement.style.backgroundColor = this.settings.messageGradientColor1;
         } else {
             // Базовый цвет фона с прозрачностью
             const baseColor = this.hexToRgba(this.settings.messageBackgroundColor, this.settings.messageBackgroundOpacity / 100);
@@ -2269,7 +2273,6 @@ class TwitchChat {
     
     // Метод для создания градиента
     createGradient(gradientType, color1, color2, direction) {
-        // Для OBS используем только простые градиенты
         switch (gradientType) {
             case 'linear':
                 // Используем только градусы для лучшей совместимости с OBS
@@ -2287,8 +2290,8 @@ class TwitchChat {
             case 'radial':
                 return `radial-gradient(circle, ${color1}, ${color2})`;
             case 'conic':
-                // Conic градиенты не поддерживаются в OBS, используем linear
-                return `linear-gradient(45deg, ${color1}, ${color2})`;
+                // Conic градиенты для современных браузеров
+                return `conic-gradient(from 0deg, ${color1}, ${color2})`;
             default:
                 return color1;
         }
