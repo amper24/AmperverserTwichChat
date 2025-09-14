@@ -1869,7 +1869,7 @@ class ChatEditor {
             }
         }
         
-        return badges ? badges + ' ' : '';
+        return badges;
     }
     
     getFallbackBadge(badgeType) {

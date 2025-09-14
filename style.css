@@ -512,11 +512,12 @@ body {
 }
 
 .badge {
-    width: 1em;
-    height: 1em;
+    width: 1.2em;
+    height: 1.2em;
     margin-right: 0 !important;
     display: inline-block;
     vertical-align: baseline;
+    transform: translateY(1px);
     object-fit: contain;
     flex-shrink: 0;
 }

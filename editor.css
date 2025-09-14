@@ -1275,11 +1275,12 @@ body {
 }
 
 .preview-message .badge {
-    width: 1.1em;
-    height: 1.1em;
+    width: 1.2em;
+    height: 1.2em;
     margin-right: 0 !important;
     display: inline-block;
     vertical-align: baseline;
+    transform: translateY(1px);
     object-fit: contain;
     flex-shrink: 0;
 }
@@ -1605,9 +1606,10 @@ body {
     }
     
     .preview-message .badge {
-        width: 1em;
-        height: 1em;
-        margin-right: 0.2em;
+        width: 1.2em;
+        height: 1.2em;
+        margin-right: 0 !important;
+        transform: translateY(1px);
     }
 }
 

@@ -1635,13 +1635,14 @@ class TwitchChat {
             const processedActionText = this.processEmotes(actionText, userData);
             messageHtml = `<span class="username" style="color: ${userColor}">${badges}${this.escapeHtml(displayName)}</span><span class="text" style="color: ${userColor}">${processedActionText}</span>`;
         } else {
-            messageHtml = `<span class="username" style="color: ${userColor}">${badges}${this.escapeHtml(displayName)}:</span> <span class="text">${processedText}</span>`;
+            messageHtml = `<span class="username" style="color: ${userColor}">${badges}${this.escapeHtml(displayName)}:</span><span class="text">${processedText}</span>`;
         }
         
         messageElement.innerHTML = messageHtml;
         
         this.chatMessagesElement.appendChild(messageElement);
         this.messageCount++;
+    
         
         // Синхронизируем счетчик с реальным количеством сообщений
         this.syncMessageCount();
@@ -1804,7 +1805,7 @@ class TwitchChat {
             });
         }
         
-        return badgeElements.join('') + (badgeElements.length > 0 ? ' ' : '');
+        return badgeElements.join('');
     }
     
     getBadgeUrl(badgeType, badgeVersion) {
