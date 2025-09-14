@@ -2442,8 +2442,47 @@ class TwitchChat {
         return this.channel;
     }
     
+    // Загрузка глобальных бейджей Twitch
+    loadTwitchGlobalBadges() {
+        fetch('https://api.twitch.tv/helix/chat/badges/global', {
+            headers: {
+                'Client-ID': this.twitchClientId
+            }
+        })
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}`);
+            }
+            return res.json();
+        })
+        .then(data => {
+            console.log('Twitch global badges loaded:', data.data?.length || 0);
+            
+            // Сохраняем глобальные бейджи в кэш
+            if (!this.badgeCache.has('global')) {
+                this.badgeCache.set('global', { global: {}, channel: {} });
+            }
+            
+            const globalBadges = {};
+            if (data.data) {
+                data.data.forEach(badge => {
+                    globalBadges[badge.set_id] = badge;
+                });
+            }
+            
+            this.badgeCache.get('global').global = globalBadges;
+            console.log('Global badges cached:', Object.keys(globalBadges));
+        })
+        .catch(err => {
+            console.warn('Twitch global badges error:', err.message);
+        });
+    }
+    
     // Загрузка дополнительных бейджей - используем API как в jChat
     loadAdditionalBadges() {
+        // Загружаем глобальные бейджи Twitch
+        this.loadTwitchGlobalBadges();
+        
         // FFZ:AP бейджи - как в jChat
         fetch('https://api.ffzap.com/v1/supporters')
             .then(res => {
@@ -2523,12 +2562,55 @@ class TwitchChat {
             });
     }
     
+    // Загрузка бейджей канала Twitch
+    loadTwitchChannelBadges(channelId) {
+        if (!channelId || channelId === 'global') {
+            console.log('No channel ID for badges, skipping channel badges');
+            return;
+        }
+        
+        fetch(`https://api.twitch.tv/helix/chat/badges?broadcaster_id=${channelId}`, {
+            headers: {
+                'Client-ID': this.twitchClientId
+            }
+        })
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}`);
+            }
+            return res.json();
+        })
+        .then(data => {
+            console.log('Twitch channel badges loaded:', data.data?.length || 0);
+            
+            // Сохраняем бейджи канала в кэш
+            if (!this.badgeCache.has(channelId)) {
+                this.badgeCache.set(channelId, { global: {}, channel: {} });
+            }
+            
+            const channelBadges = {};
+            if (data.data) {
+                data.data.forEach(badge => {
+                    channelBadges[badge.set_id] = badge;
+                });
+            }
+            
+            this.badgeCache.get(channelId).channel = channelBadges;
+            console.log('Channel badges cached:', Object.keys(channelBadges));
+        })
+        .catch(err => {
+            console.warn('Twitch channel badges error:', err.message);
+        });
+    }
+    
     // Загрузка бейджей Twitch через API - как в jChat
     loadBadges(channelId) {
         this.badges = {};
         
-        // Twitch badges API не поддерживает CORS для браузеров
-        // Используем fallback данные сразу
+        // Загружаем бейджи канала через API
+        this.loadTwitchChannelBadges(channelId);
+        
+        // Fallback данные на случай ошибки API
         console.log('Using fallback badges for channel:', this.channel);
         this.badges = {
             'broadcaster:1': 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/2',
