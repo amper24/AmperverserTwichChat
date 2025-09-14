@@ -699,28 +699,6 @@ class TwitchChat {
             console.error('Failed to load channel data:', error);
         }
         
-        // Тестируем API глобальных бейджей
-        this.testGlobalBadgesAPI();
-        
-        // Принудительно создаем тестовое сообщение через 5 секунд
-        setTimeout(() => {
-            console.log('⏰ Принудительно создаем тестовое сообщение с глобальными бейджами...');
-            this.createTestMessageWithGlobalBadges();
-            
-            // Создаем тестовое сообщение с twitch-recap-2024
-            setTimeout(() => {
-                const testMessage = {
-                    username: 'TestRecap2024',
-                    displayName: 'TestRecap2024',
-                    message: 'Тестовое сообщение с бейджем twitch-recap-2024!',
-                    badges: 'twitch-recap-2024/1',
-                    color: '#FF6B35',
-                    timestamp: new Date().toISOString()
-                };
-                this.addChatMessage(testMessage.username, testMessage.message, testMessage);
-                console.log('✅ Тестовое сообщение с twitch-recap-2024 добавлено');
-            }, 1000);
-        }, 5000);
         
         // Проверяем состояние кэша через 3 секунды
         setTimeout(() => {
@@ -886,193 +864,6 @@ class TwitchChat {
         }
     }
     
-    startDemoMessages() {
-        // Метод отключен - демо-сообщения только в редакторе
-        return;
-        // Добавляем демо-сообщения для тестирования с полными IRC тегами
-        const demoMessages = [
-            { 
-                username: 'Viewer1', 
-                text: 'Привет всем! Как дела? PogChamp', 
-                userData: { 
-                    color: '#ff6b6b', 
-                    badges: 'subscriber/1',
-                    'display-name': 'Viewer1',
-                    emotes: null,
-                    bits: '0'
-                } 
-            },
-            { 
-                username: 'GamerPro', 
-                text: 'Отличный стрим! Keep it up! Kappa', 
-                userData: { 
-                    color: '#4ecdc4', 
-                    badges: 'moderator/1',
-                    'display-name': 'GamerPro',
-                    emotes: null,
-                    bits: '0'
-                } 
-            },
-            { 
-                username: 'ChatLover', 
-                text: 'Когда следующий стрим? monkaS', 
-                userData: { 
-                    color: '#45b7d1', 
-                    badges: 'vip/1',
-                    'display-name': 'ChatLover',
-                    emotes: null,
-                    bits: '0'
-                } 
-            },
-            { 
-                username: 'Fan123', 
-                text: 'Спасибо за контент! 5Head', 
-                userData: { 
-                    color: '#96ceb4', 
-                    badges: 'subscriber/1',
-                    'display-name': 'Fan123',
-                    emotes: null,
-                    bits: '0'
-                } 
-            },
-            { 
-                username: 'StreamerFan', 
-                text: 'Можете показать настройки игры? OMEGALUL', 
-                userData: { 
-                    color: '#feca57', 
-                    badges: '',
-                    'display-name': 'StreamerFan',
-                    emotes: null,
-                    bits: '0'
-                } 
-            },
-            { 
-                username: 'ModeratorBot', 
-                text: 'Привет! Как настроение? PepeHands', 
-                userData: { 
-                    color: '#ff9ff3', 
-                    badges: 'moderator/1',
-                    'display-name': 'ModeratorBot',
-                    emotes: null,
-                    bits: '0'
-                } 
-            },
-            { 
-                username: 'VIPUser', 
-                text: 'Отличная игра! monkaW', 
-                userData: { 
-                    color: '#54a0ff', 
-                    badges: 'vip/1,subscriber/1',
-                    'display-name': 'VIPUser',
-                    emotes: null,
-                    bits: '0'
-                } 
-            },
-            { 
-                username: 'NewViewer', 
-                text: 'Первый раз здесь, очень круто! FeelsGoodMan', 
-                userData: { 
-                    color: '#5f27cd', 
-                    badges: '',
-                    'display-name': 'NewViewer',
-                    emotes: null,
-                    bits: '0'
-                } 
-            },
-            { 
-                username: 'ChatMaster', 
-                text: 'Какой крутой дизайн чата! POGGERS', 
-                userData: { 
-                    color: '#ff9f43', 
-                    badges: 'subscriber/1',
-                    'display-name': 'ChatMaster',
-                    emotes: null,
-                    bits: '0'
-                } 
-            },
-            { 
-                username: 'StreamLover', 
-                text: 'Сколько времени стримите? monkaS', 
-                userData: { 
-                    color: '#10ac84', 
-                    badges: 'vip/1',
-                    'display-name': 'StreamLover',
-                    emotes: null,
-                    bits: '0'
-                } 
-            },
-            { 
-                username: 'GameFan', 
-                text: 'Какая игра следующая? 5Head', 
-                userData: { 
-                    color: '#ee5a24', 
-                    badges: '',
-                    'display-name': 'GameFan',
-                    emotes: null,
-                    bits: '0'
-                } 
-            },
-            { 
-                username: 'ModHelper', 
-                text: 'Всем привет! Kappa', 
-                userData: { 
-                    color: '#0984e3', 
-                    badges: 'moderator/1',
-                    'display-name': 'ModHelper',
-                    emotes: null,
-                    bits: '0'
-                } 
-            },
-            { 
-                username: 'Broadcaster', 
-                text: 'Добро пожаловать на мой стрим! PogChamp', 
-                userData: { 
-                    color: '#9146ff', 
-                    badges: 'broadcaster/1',
-                    'display-name': 'Broadcaster',
-                    emotes: null,
-                    bits: '0'
-                } 
-            },
-            { 
-                username: 'CheerUser', 
-                text: 'cheer100 Отличный стрим!', 
-                userData: { 
-                    color: '#9c3ee8', 
-                    badges: 'subscriber/1',
-                    'display-name': 'CheerUser',
-                    emotes: null,
-                    bits: '100'
-                } 
-            },
-            { 
-                username: 'BigCheer', 
-                text: 'cheer1000 Спасибо за контент!', 
-                userData: { 
-                    color: '#1db2a5', 
-                    badges: 'vip/1',
-                    'display-name': 'BigCheer',
-                    emotes: null,
-                    bits: '1000'
-                } 
-            }
-        ];
-        
-        // Добавляем сообщения с интервалом (быстрее)
-        demoMessages.forEach((msg, index) => {
-            setTimeout(() => {
-                this.addChatMessage(msg.username, msg.text, msg.userData);
-            }, (index + 1) * 1000); // Каждую секунду
-        });
-        
-        // Добавляем новые сообщения каждые 5 секунд (чаще)
-        setInterval(() => {
-            if (this.isConnected) {
-                const randomMsg = demoMessages[Math.floor(Math.random() * demoMessages.length)];
-                this.addChatMessage(randomMsg.username, randomMsg.text, randomMsg.userData);
-            }
-        }, 5000);
-    }
     
     handleMessage(data) {
         const lines = data.split('\r\n');
@@ -1947,19 +1738,6 @@ class TwitchChat {
         return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
     
-    // Тестируем загрузку эмодзи
-    testEmotes() {
-        console.log('Testing emotes...');
-        console.log('BTTV Global:', this.bttvGlobalEmotes.length);
-        console.log('BTTV Channel:', this.bttvChannelEmotes.length);
-        console.log('BTTV Shared:', this.bttvSharedEmotes.length);
-        
-        // Тестируем обработку эмодзи
-        const testText = 'Hello PogChamp Kappa monkaS 5Head OMEGALUL';
-        const processedText = this.processEmotes(testText);
-        console.log('Original:', testText);
-        console.log('Processed:', processedText);
-    }
     
     
     
@@ -2044,12 +1822,12 @@ class TwitchChat {
             // Базовый цвет фона с прозрачностью
             const baseColor = this.hexToRgba(this.settings.messageBackgroundColor, this.settings.messageBackgroundOpacity / 100);
             messageElement.style.backgroundColor = baseColor;
-            
+        
             // Применяем фоновые изображения если есть
-            if (backgrounds.length > 0) {
-                messageElement.style.backgroundImage = backgrounds.join(', ');
-                messageElement.style.backgroundSize = `${this.settings.messageBgSize1}, ${this.settings.messageBgSize2}`;
-                messageElement.style.backgroundPosition = `${this.settings.messageBgPosition1}, ${this.settings.messageBgPosition2}`;
+        if (backgrounds.length > 0) {
+            messageElement.style.backgroundImage = backgrounds.join(', ');
+            messageElement.style.backgroundSize = `${this.settings.messageBgSize1}, ${this.settings.messageBgSize2}`;
+            messageElement.style.backgroundPosition = `${this.settings.messageBgPosition1}, ${this.settings.messageBgPosition2}`;
             }
         }
         
@@ -2130,19 +1908,6 @@ class TwitchChat {
         }, 200);
     }
     
-    // Экранирование регулярных выражений
-    escapeRegExp(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
-    
-    // Получение ID канала - используем fallback из-за требований OAuth
-    async getChannelId() {
-        // Twitch Helix API требует OAuth токен, поэтому используем fallback
-        // В большинстве случаев название канала работает как ID для других API
-        console.log('Using channel name as ID (Helix API requires OAuth):', this.channel);
-        console.log('ℹ️ Для полного доступа к Twitch API нужен OAuth токен. Используем fallback данные.');
-        return this.channel;
-    }
     
     // Проверка состояния кэша бейджей
     checkBadgeCache() {
@@ -2160,41 +1925,8 @@ class TwitchChat {
             }
         }
         
-        // Проверяем конкретные бейджи
-        const testBadges = ['admin', 'global_mod', 'staff', 'twitchbot'];
-        testBadges.forEach(badgeType => {
-            const url = this.getBadgeUrl(badgeType, '1');
-            console.log(`🧪 Тест бейджа ${badgeType}:`, url ? '✅ Работает' : '❌ Не работает');
-        });
     }
     
-    // Тестирование API глобальных бейджей
-    testGlobalBadgesAPI() {
-        console.log('🧪 Тестируем API глобальных бейджей...');
-        
-        // Простой тест fetch
-        fetch('https://api.twitch.tv/helix/chat/badges/global', {
-            headers: {
-                'Client-ID': this.twitchClientId,
-                'Accept': 'application/vnd.twitchtv.v5+json'
-            }
-        })
-        .then(res => {
-            console.log('🧪 Тест API - статус:', res.status, res.statusText);
-            if (res.ok) {
-                return res.json();
-            } else {
-                throw new Error(`API тест не прошел: ${res.status} ${res.statusText}`);
-            }
-        })
-        .then(data => {
-            console.log('🧪 Тест API - данные получены:', data);
-            console.log('🧪 Тест API - количество бейджей:', data.data?.length || 0);
-        })
-        .catch(err => {
-            console.error('🧪 Тест API - ошибка:', err);
-        });
-    }
     
     // Загрузка ВСЕХ глобальных бейджей Twitch через API
     loadTwitchGlobalBadges() {
@@ -2220,13 +1952,13 @@ class TwitchChat {
         fetch('https://api.twitch.tv/helix/chat/badges/global', {
             headers: headers
         })
-        .then(res => {
+            .then(res => {
             console.log('📡 Ответ от API:', res.status, res.statusText);
-            if (!res.ok) {
+                if (!res.ok) {
                 throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-            }
-            return res.json();
-        })
+                }
+                return res.json();
+            })
         .then(data => {
             console.log('✅ Twitch глобальные бейджи загружены:', data.data?.length || 0);
             console.log('📋 Полные данные API:', data);
@@ -2255,13 +1987,8 @@ class TwitchChat {
             // Анализируем все загруженные бейджи
             this.analyzeAllGlobalBadges(globalBadges);
             
-            // Тестируем загрузку всех бейджей
-            this.testAllGlobalBadges(globalBadges);
-            
-            // Создаем тестовые сообщения с реальными бейджами из API
-            this.createTestMessageWithGlobalBadges();
-        })
-        .catch(err => {
+            })
+            .catch(err => {
             console.error('❌ Ошибка загрузки глобальных бейджей Twitch:', err);
             console.error('🔍 Детали ошибки:', {
                 message: err.message,
@@ -2356,28 +2083,6 @@ class TwitchChat {
         }
     }
     
-    // Тестирование всех глобальных бейджей
-    testAllGlobalBadges(globalBadges) {
-        console.log('🧪 Тестируем все глобальные бейджи...');
-        
-        const allBadgeIds = Object.keys(globalBadges);
-        const testCount = Math.min(20, allBadgeIds.length); // Тестируем до 20 бейджей
-        const testBadges = allBadgeIds.slice(0, testCount);
-        
-        let workingCount = 0;
-        testBadges.forEach(badgeType => {
-            const url = this.getBadgeUrl(badgeType, '1');
-            if (url) {
-                workingCount++;
-                console.log(`✅ ${badgeType}: работает`);
-            } else {
-                console.log(`❌ ${badgeType}: не работает`);
-            }
-        });
-        
-        console.log(`📊 Тест завершен: ${workingCount}/${testCount} бейджей работают`);
-        console.log(`🎯 Всего глобальных бейджей доступно: ${allBadgeIds.length}`);
-    }
     
     // Fallback глобальные бейджи на случай ошибки API
     loadFallbackGlobalBadges() {
@@ -2439,8 +2144,6 @@ class TwitchChat {
         console.log('✅ Fallback глобальные бейджи загружены:', Object.keys(fallbackGlobalBadges));
         console.log('📋 Кэш глобальных бейджей:', this.badgeCache.get('global'));
         
-        // Тестируем загрузку глобальных бейджей
-        this.testGlobalBadges();
     }
     
     // Упрощенная загрузка бейджа напрямую через Twitch API
@@ -2629,102 +2332,8 @@ class TwitchChat {
         console.log('✅ Fallback бейдж добавлен:', badgeType);
     }
     
-    // Тестирование глобальных бейджей
-    testGlobalBadges() {
-        console.log('🧪 Тестируем глобальные бейджи...');
-        const testBadges = ['admin', 'global_mod', 'staff', 'twitchbot'];
-        
-        testBadges.forEach(badgeType => {
-            const url = this.getBadgeUrl(badgeType, '1');
-            console.log(`Тест ${badgeType}:`, url ? '✅ Работает' : '❌ Не работает', url);
-        });
-    }
     
-    // Создание тестовых сообщений с реальными бейджами из API
-    createTestMessageWithGlobalBadges() {
-        console.log('📝 Создаем тестовые сообщения с реальными бейджами из API...');
-        
-        // Получаем все доступные глобальные бейджи
-        const globalBadges = this.badgeCache.get('global')?.global || {};
-        const allBadgeIds = Object.keys(globalBadges);
-        
-        if (allBadgeIds.length === 0) {
-            console.log('⚠️ Глобальные бейджи еще не загружены, пропускаем тестовые сообщения');
-            return;
-        }
-        
-        // Создаем тестовое сообщение с глобальными бейджами
-        const testMessage = {
-            username: 'TestAdmin',
-            displayName: 'TestAdmin',
-            message: 'Тестовое сообщение с глобальными бейджами!',
-            badges: 'admin/1,global_mod/1,staff/1', // Базовые глобальные бейджи
-            color: '#FF0000',
-            timestamp: new Date().toISOString()
-        };
-        
-        // Добавляем сообщение в чат
-        setTimeout(() => {
-            this.addChatMessage(testMessage.username, testMessage.message, testMessage);
-            console.log('✅ Тестовое сообщение добавлено в чат');
-            
-            // Создаем второе тестовое сообщение с комбинацией бейджей
-            const testMessage2 = {
-                username: 'TestModerator',
-                displayName: 'TestModerator',
-                message: 'Тестовое сообщение с канальными и глобальными бейджами!',
-                badges: 'moderator/1,admin/1,subscriber/12', // Канальные + глобальные
-                color: '#00FF00',
-                timestamp: new Date().toISOString()
-            };
-            
-            setTimeout(() => {
-                this.addChatMessage(testMessage2.username, testMessage2.message, testMessage2);
-                console.log('✅ Второе тестовое сообщение добавлено в чат');
-                
-                // Создаем третье тестовое сообщение с пользовательскими бейджами 2024
-                this.createTestMessageWithSpecialBadges(allBadgeIds);
-            }, 2000);
-        }, 1000);
-    }
     
-    // Создание тестового сообщения со специальными бейджами 2024
-    createTestMessageWithSpecialBadges(allBadgeIds) {
-        console.log('🎮 Создаем тестовое сообщение со специальными бейджами 2024...');
-        
-        // Ищем специальные бейджи 2024 года
-        const specialKeywords2024 = [
-            'silksong', 'minecraft', 'hollow-knight', '2024', 'awards', 
-            'best', 'special', 'event', 'game', 'twitch'
-        ];
-        
-        const specialBadges = allBadgeIds.filter(badgeId => {
-            const lowerBadgeId = badgeId.toLowerCase();
-            return specialKeywords2024.some(keyword => lowerBadgeId.includes(keyword));
-        });
-        
-        if (specialBadges.length > 0) {
-            // Берем первые 3 специальных бейджа
-            const selectedBadges = specialBadges.slice(0, 3).map(badgeId => `${badgeId}/1`).join(',');
-            
-            const testMessage3 = {
-                username: 'TestGamer2024',
-                displayName: 'TestGamer2024',
-                message: 'Тестовое сообщение со специальными бейджами 2024!',
-                badges: selectedBadges,
-                color: '#0000FF',
-                timestamp: new Date().toISOString()
-            };
-            
-            setTimeout(() => {
-                this.addChatMessage(testMessage3.username, testMessage3.message, testMessage3);
-                console.log('✅ Тестовое сообщение со специальными бейджами добавлено в чат');
-                console.log('🎊 Использованы бейджи:', selectedBadges);
-            }, 3000);
-        } else {
-            console.log('ℹ️ Специальные бейджи 2024 не найдены, пропускаем тестовое сообщение');
-        }
-    }
     
     // Загрузка дополнительных бейджей - используем API как в jChat
     loadAdditionalBadges() {
@@ -2784,12 +2393,12 @@ class TwitchChat {
                 'Accept': 'application/vnd.twitchtv.v5+json'
             }
         })
-        .then(res => {
-            if (!res.ok) {
+            .then(res => {
+                if (!res.ok) {
                 throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-            }
-            return res.json();
-        })
+                }
+                return res.json();
+            })
         .then(data => {
             console.log('Twitch channel badges loaded:', data.data?.length || 0);
             
@@ -2819,8 +2428,8 @@ class TwitchChat {
                 const versions = Object.keys(channelBadges[badgeId].versions);
                 console.log(`Channel badge ${badgeId}: ${versions.length} versions`);
             });
-        })
-        .catch(err => {
+            })
+            .catch(err => {
             console.warn('Twitch channel badges error:', err.message);
             // В случае ошибки, используем fallback бейджи канала
             this.loadFallbackChannelBadges(channelId);
@@ -2984,3 +2593,4 @@ window.addEventListener('beforeunload', () => {
         window.twitchChat.disconnect();
     }
 });
+
