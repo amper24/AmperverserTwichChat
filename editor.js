@@ -11,6 +11,7 @@ class ChatEditor {
         
         this.settings = {
             channel: '',
+            baseURL: 'https://amper24.github.io/AmperverserTwichChat/',
             borderWidth: 3,
             borderColor: '#9146ff',
             borderRadius: 10,
@@ -94,6 +95,7 @@ class ChatEditor {
             channelInput: document.getElementById('channel-input'),
             saveChannelBtn: document.getElementById('save-channel'),
             reconnectBtn: document.getElementById('reconnect-btn'),
+            baseURL: document.getElementById('base-url'),
             borderWidth: document.getElementById('border-width'),
             borderWidthNumber: document.getElementById('border-width-number'),
             borderWidthValue: document.getElementById('border-width-value'),
@@ -264,6 +266,12 @@ class ChatEditor {
         // Переподключение
         this.elements.reconnectBtn.addEventListener('click', () => {
             this.reconnectChat();
+        });
+        
+        // Базовый URL
+        this.elements.baseURL.addEventListener('input', (e) => {
+            this.settings.baseURL = e.target.value;
+            this.updatePreview();
         });
         
         // Настройки рамки
@@ -1860,7 +1868,10 @@ class ChatEditor {
     }
     
     generateChatURL() {
-        const baseURL = window.location.origin + '/chat.html';
+        // Используем настройку baseURL или fallback на текущий домен
+        const baseURL = this.settings.baseURL ? 
+            (this.settings.baseURL.endsWith('/') ? this.settings.baseURL + 'chat.html' : this.settings.baseURL + '/chat.html') :
+            window.location.origin + '/chat.html';
         const params = new URLSearchParams();
         
         // Добавляем все настройки как параметры URL

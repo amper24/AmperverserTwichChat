@@ -1628,3 +1628,12 @@ body {
         padding: 2px 4px;
     }
 }
+
+/* Стили для подсказок */
+.setting-hint {
+    display: block;
+    color: #888;
+    font-size: 0.85em;
+    margin-top: 5px;
+    font-style: italic;
+}
