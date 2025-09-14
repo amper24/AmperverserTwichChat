@@ -1820,8 +1820,13 @@ class TwitchChat {
         
         // Обработка Twitch бейджей из IRC тегов
         if (typeof(userData.badges) === 'string') {
-            const priorityBadges = ['predictions', 'admin', 'global_mod', 'staff', 'twitchbot', 'broadcaster', 'moderator', 'vip'];
-            const twitchBadges = [];
+            // Определяем порядок отображения бейджей
+            const channelRoleBadges = ['broadcaster', 'moderator', 'vip', 'subscriber'];
+            const globalBadges = ['admin', 'global_mod', 'staff', 'twitchbot', 'predictions'];
+            const allPriorityBadges = [...channelRoleBadges, ...globalBadges];
+            
+            const channelBadges = [];
+            const globalBadgesList = [];
             const otherBadges = [];
             
             userData.badges.split(',').forEach(badge => {
@@ -1833,19 +1838,25 @@ class TwitchChat {
                         type: 'twitch',
                         description: badgeType,
                         url: badgeUrl,
-                        priority: priorityBadges.includes(badgeType)
+                        badgeType: badgeType
                     };
                     
-                    if (badgeObj.priority) {
-                        twitchBadges.push(badgeObj);
+                    if (channelRoleBadges.includes(badgeType)) {
+                        channelBadges.push(badgeObj);
+                    } else if (globalBadges.includes(badgeType)) {
+                        globalBadgesList.push(badgeObj);
                     } else {
                         otherBadges.push(badgeObj);
                     }
                 }
             });
             
-            // Добавляем приоритетные бейджи
-            twitchBadges.forEach(badge => {
+            // Добавляем бейджи в правильном порядке: сначала роли канала, потом глобальные
+            channelBadges.forEach(badge => {
+                badgeElements.push(`<img class="badge" src="${badge.url}" alt="${badge.description}" title="${badge.description}" />`);
+            });
+            
+            globalBadgesList.forEach(badge => {
                 badgeElements.push(`<img class="badge" src="${badge.url}" alt="${badge.description}" title="${badge.description}" />`);
             });
         }
@@ -1862,12 +1873,12 @@ class TwitchChat {
             });
         }
         
-        // Добавляем остальные Twitch бейджи
+        // Добавляем остальные Twitch бейджи (которые не были обработаны выше)
         if (typeof(userData.badges) === 'string') {
-            const priorityBadges = ['predictions', 'admin', 'global_mod', 'staff', 'twitchbot', 'broadcaster', 'moderator', 'vip'];
+            const processedBadges = ['broadcaster', 'moderator', 'vip', 'subscriber', 'admin', 'global_mod', 'staff', 'twitchbot', 'predictions'];
             userData.badges.split(',').forEach(badge => {
                 const [badgeType, badgeVersion] = badge.split('/');
-                if (!priorityBadges.includes(badgeType)) {
+                if (!processedBadges.includes(badgeType)) {
                     const badgeUrl = this.getBadgeUrl(badgeType, badgeVersion);
                     if (badgeUrl) {
                         badgeElements.push(`<img class="badge" src="${badgeUrl}" alt="${badgeType}" title="${badgeType}" />`);
