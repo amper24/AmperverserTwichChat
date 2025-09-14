@@ -270,11 +270,11 @@ class TwitchChat {
         if (urlParams.has('hideBackground')) this.settings.hideBackground = urlParams.get('hideBackground') === 'true';
         
         // Настройки сообщений
-        if (urlParams.has('fadeMessages')) this.settings.fadeMessages = urlParams.get('fadeMessages') === 'true';
-        if (urlParams.has('messageAlignment')) this.settings.messageAlignment = urlParams.get('messageAlignment');
-        if (urlParams.has('borderMode')) this.settings.borderMode = urlParams.get('borderMode');
-        if (urlParams.has('borderAlignment')) this.settings.borderAlignment = urlParams.get('borderAlignment');
-        if (urlParams.has('chatDirection')) this.settings.chatDirection = urlParams.get('chatDirection');
+        if (urlParams.get('fadeMessages')) this.settings.fadeMessages = urlParams.get('fadeMessages') === 'true';
+        if (urlParams.get('messageAlignment')) this.settings.messageAlignment = urlParams.get('messageAlignment');
+        if (urlParams.get('borderMode')) this.settings.borderMode = urlParams.get('borderMode');
+        if (urlParams.get('borderAlignment')) this.settings.borderAlignment = urlParams.get('borderAlignment');
+        if (urlParams.get('chatDirection')) this.settings.chatDirection = urlParams.get('chatDirection');
         
         // Настройки анимаций
         if (urlParams.get('appearAnimation')) this.settings.appearAnimation = urlParams.get('appearAnimation');
@@ -305,10 +305,10 @@ class TwitchChat {
         if (urlParams.get('messageBgPosition2')) this.settings.messageBgPosition2 = urlParams.get('messageBgPosition2');
         
         // Настройки значков
-        if (urlParams.has('showUserBadges')) {
+        if (urlParams.get('showUserBadges')) {
             this.settings.showUserBadges = urlParams.get('showUserBadges') === 'true';
         }
-        if (urlParams.has('showChannelBadges')) {
+        if (urlParams.get('showChannelBadges')) {
             this.settings.showChannelBadges = urlParams.get('showChannelBadges') === 'true';
         }
         
