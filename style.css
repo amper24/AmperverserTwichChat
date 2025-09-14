@@ -1,0 +1,945 @@
+:root {
+    --primary-color: #9146ff;
+    --secondary-color: #ff6b6b;
+    --background-color: rgba(255, 255, 255, 0.05);
+    --text-color: #ffffff;
+    --border-color: #9146ff;
+    --badge-size: 16px;
+    --badge-spacing: 2px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: transparent;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.chat-container {
+    width: 100%;
+    min-width: 300px;
+    min-height: 200px;
+    background: transparent;
+    backdrop-filter: none;
+    border: 3px solid #9146ff;
+    border-radius: 10px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    /* Размеры будут устанавливаться динамически через JavaScript */
+}
+
+.chat-container.no-border {
+    border: none;
+    box-shadow: none;
+}
+
+.chat-container.no-background {
+    background: transparent;
+    backdrop-filter: none;
+}
+
+/* Стили для псевдоэлемента прозрачности фона */
+.chat-container .background-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: -1;
+    border-radius: inherit;
+}
+
+
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 20px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: transparent;
+    justify-content: flex-end;
+}
+
+/* Направление чата */
+.chat-messages.direction-top-to-bottom {
+    justify-content: flex-start;
+}
+
+.chat-messages.direction-bottom-to-top {
+    justify-content: flex-end;
+}
+
+.message {
+    margin-bottom: 3px;
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: pre-wrap;
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+/* Класс для сообщений без анимации */
+.message.no-animation {
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+    line-height: 1.2;
+    background-size: cover, cover;
+    background-position: center, center;
+    background-repeat: no-repeat, no-repeat;
+    position: relative;
+}
+
+/* Анимации исчезновения */
+.message.fade-out {
+    opacity: 0;
+    transform: translateX(-20px);
+}
+
+.message.slide-out-left {
+    opacity: 0;
+    transform: translateX(-100px);
+}
+
+.message.slide-out-right {
+    opacity: 0;
+    transform: translateX(100px);
+}
+
+.message.slide-out-up {
+    opacity: 0;
+    transform: translateY(-50px);
+}
+
+.message.scale-out {
+    opacity: 0;
+    transform: scale(0.5);
+}
+
+/* Центрирование сообщений */
+.chat-messages.centered {
+    align-items: center;
+}
+
+.message.centered {
+    text-align: center;
+    max-width: 80%;
+}
+
+/* Анимации появления сообщений */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Новые анимации появления */
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(-180deg);
+        opacity: 0;
+    }
+    to {
+        transform: rotate(0deg);
+        opacity: 1;
+    }
+}
+
+@keyframes flip {
+    from {
+        transform: perspective(400px) rotateY(-90deg);
+        opacity: 0;
+    }
+    to {
+        transform: perspective(400px) rotateY(0deg);
+        opacity: 1;
+    }
+}
+
+@keyframes zoom {
+    from {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes elastic {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes back {
+    0% {
+        transform: translateX(-100px) scale(0.8);
+        opacity: 0;
+    }
+    50% {
+        transform: translateX(20px) scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+}
+
+/* Новые анимации исчезновения */
+@keyframes slide-out-down {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+}
+
+@keyframes rotate-out {
+    from {
+        transform: rotate(0deg);
+        opacity: 1;
+    }
+    to {
+        transform: rotate(180deg);
+        opacity: 0;
+    }
+}
+
+@keyframes flip-out {
+    from {
+        transform: perspective(400px) rotateY(0deg);
+        opacity: 1;
+    }
+    to {
+        transform: perspective(400px) rotateY(90deg);
+        opacity: 0;
+    }
+}
+
+@keyframes zoom-out {
+    from {
+        transform: scale(1);
+        opacity: 1;
+    }
+    to {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+}
+
+@keyframes elastic-out {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(0);
+        opacity: 0;
+    }
+}
+
+@keyframes back-out {
+    0% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translateX(-20px) scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateX(100px) scale(0.8);
+        opacity: 0;
+    }
+}
+
+/* Дополнительные анимации исчезновения для полной совместимости */
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes slideOutLeft {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(-100px);
+        opacity: 0;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100px);
+        opacity: 0;
+    }
+}
+
+@keyframes slideOutUp {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+}
+
+@keyframes slideOutDown {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+}
+
+@keyframes scaleOut {
+    from {
+        transform: scale(1);
+        opacity: 1;
+    }
+    to {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+}
+
+@keyframes rotateOut {
+    from {
+        transform: rotate(0deg);
+        opacity: 1;
+    }
+    to {
+        transform: rotate(180deg);
+        opacity: 0;
+    }
+}
+
+@keyframes flipOut {
+    from {
+        transform: perspective(400px) rotateY(0deg);
+        opacity: 1;
+    }
+    to {
+        transform: perspective(400px) rotateY(90deg);
+        opacity: 0;
+    }
+}
+
+@keyframes zoomOut {
+    from {
+        transform: scale(1);
+        opacity: 1;
+    }
+    to {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+}
+
+@keyframes elasticOut {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(0);
+        opacity: 0;
+    }
+}
+
+@keyframes backOut {
+    0% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translateX(-20px) scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateX(100px) scale(0.8);
+        opacity: 0;
+    }
+}
+
+/* Анимации появления применяются через JavaScript напрямую к style.animation */
+
+/* Анимации исчезновения применяются через JavaScript напрямую к style.animation */
+
+.message .username {
+    color: #9146ff;
+    font-weight: bold;
+    margin-right: 2px;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 2px;
+}
+
+.badge {
+    width: 1em;
+    height: 1em;
+    margin-right: 0.2em;
+    display: inline-block;
+    vertical-align: baseline;
+    transition: all 0.2s ease;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.badge.broadcaster {
+    color: #ff6b6b;
+}
+
+.badge.mod {
+    color: #4CAF50;
+}
+
+.badge.vip {
+    color: #FF9800;
+}
+
+.badge.subscriber {
+    color: #9C27B0;
+}
+
+.badge.turbo {
+    color: #00BCD4;
+}
+
+.badge.prime {
+    color: #9C27B0;
+}
+
+.badge.bits {
+    color: #FFD700;
+}
+
+.badge.gift-leader {
+    color: #FF5722;
+}
+
+.badge.gifter {
+    color: #FF5722;
+}
+
+/* Стили для эмодзи (7TV, BTTV, FFZ) */
+.emote {
+    height: 1.2em;
+    vertical-align: middle;
+    margin: 0 0.1em;
+    display: inline-block;
+    transition: all 0.2s ease;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.emote:hover {
+    transform: scale(1.1);
+    filter: brightness(1.2);
+}
+
+.message .text {
+    color: inherit;
+    line-height: 1.2;
+}
+
+/* Настройки выравнивания сообщений */
+.chat-messages.align-left .message {
+    text-align: left;
+}
+
+.chat-messages.align-center .message {
+    text-align: center;
+}
+
+.chat-messages.align-right .message {
+    text-align: right;
+}
+
+.chat-messages.align-justify .message {
+    text-align: justify;
+}
+
+/* Режимы рамки сообщений */
+.message.border-fit-content {
+    display: block;
+    width: auto;
+    max-width: fit-content;
+    box-sizing: border-box;
+    margin-bottom: 8px;
+}
+
+.message.border-full-width {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 4px;
+}
+
+/* Выравнивание рамок работает только в режиме fit-content */
+.chat-messages.border-fit-content.border-align-left .message {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+.chat-messages.border-fit-content.border-align-center .message {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.chat-messages.border-fit-content.border-align-right .message {
+    margin-left: auto;
+    margin-right: 0;
+}
+
+/* Режимы рамки для контейнера сообщений */
+.chat-messages.border-fit-content {
+    /* Контейнер остается flex, рамки подстраиваются под сообщения */
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-messages.border-full-width {
+    /* Контейнер остается flex, но сообщения растягиваются на всю ширину */
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* Специальные эффекты для Майнкрафт шрифтов */
+.message[style*="Press Start 2P"] .text,
+.message[style*="Press Start 2P"] .username {
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.5);
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    animation: minecraft-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes minecraft-glow {
+    0% {
+        text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.5), 0 0 5px rgba(76, 175, 80, 0.3);
+    }
+    100% {
+        text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.5), 0 0 10px rgba(76, 175, 80, 0.6);
+    }
+}
+
+.message[style*="VT323"] .text,
+.message[style*="VT323"] .username {
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.3);
+    animation: minecraft-pixel-flicker 3s ease-in-out infinite;
+}
+
+@keyframes minecraft-pixel-flicker {
+    0%, 100% {
+        opacity: 1;
+        text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.3);
+    }
+    50% {
+        opacity: 0.8;
+        text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.3), 0 0 3px rgba(255, 255, 255, 0.2);
+    }
+}
+
+.message[style*="Share Tech Mono"] .text,
+.message[style*="Share Tech Mono"] .username {
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+}
+
+.message[style*="Nova Mono"] .text,
+.message[style*="Nova Mono"] .username {
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.3);
+}
+
+.message[style*="Space Mono"] .text,
+.message[style*="Space Mono"] .username {
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+}
+
+.message[style*="Inconsolata"] .text,
+.message[style*="Inconsolata"] .username {
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+}
+
+.message[style*="Fira Code"] .text,
+.message[style*="Fira Code"] .username {
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+}
+
+.message[style*="Source Code Pro"] .text,
+.message[style*="Source Code Pro"] .username {
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+}
+
+.message[style*="JetBrains Mono"] .text,
+.message[style*="JetBrains Mono"] .username {
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+}
+
+.message[style*="Roboto Mono"] .text,
+.message[style*="Roboto Mono"] .username {
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+}
+
+.message[style*="Ubuntu Mono"] .text,
+.message[style*="Ubuntu Mono"] .username {
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+}
+
+.message[style*="PT Mono"] .text,
+.message[style*="PT Mono"] .username {
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+}
+
+.message[style*="Droid Sans Mono"] .text,
+.message[style*="Droid Sans Mono"] .username {
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+}
+
+.message[style*="Noto Sans Mono"] .text,
+.message[style*="Noto Sans Mono"] .username {
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+}
+
+.welcome-message {
+    text-align: center;
+    color: #9146ff;
+    font-size: 1.1em;
+    padding: 20px;
+    background: rgba(145, 70, 255, 0.1);
+    border-radius: 10px;
+    border: 1px solid rgba(145, 70, 255, 0.3);
+}
+
+/* Элементы управления убраны для OBS */
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .chat-container {
+        margin: 10px;
+        /* Размеры устанавливаются через JavaScript, не переопределяем */
+    }
+    
+    .chat-controls {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+    
+    .border-controls {
+        justify-content: space-between;
+    }
+    
+    .border-controls input[type="range"] {
+        width: 80px;
+    }
+}
+
+/* Эффекты при наведении */
+.chat-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+}
+
+.message:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateX(5px);
+    transition: all 0.2s ease;
+}
+
+/* Стили для стандартных эмодзи (смайликов) */
+img.emoji {
+    height: 0.8em !important;
+    width: 0.8em !important;
+    margin: 0 0.1em !important;
+    vertical-align: middle !important;
+    display: inline-block !important;
+    object-fit: contain !important;
+}
+
+/* Стили для настройки канала */
+.channel-setup {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    padding: 20px;
+}
+
+.setup-message {
+    text-align: center;
+    max-width: 500px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 30px;
+    border-radius: 15px;
+    border: 2px solid rgba(145, 70, 255, 0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.setup-message h3 {
+    color: #9146ff;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+.setup-message p {
+    color: #ffffff;
+    margin-bottom: 20px;
+    font-size: 1.1em;
+}
+
+.setup-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.setup-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.setup-btn.primary {
+    background: linear-gradient(135deg, #9146ff, #7c3aed);
+    color: white;
+    box-shadow: 0 4px 15px rgba(145, 70, 255, 0.3);
+}
+
+.setup-btn.primary:hover {
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(145, 70, 255, 0.4);
+}
+
+.setup-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.setup-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.setup-info {
+    text-align: left;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    border-radius: 10px;
+    border-left: 4px solid #9146ff;
+}
+
+.setup-info p {
+    color: #9146ff;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.setup-info ol {
+    color: #ffffff;
+    padding-left: 20px;
+}
+
+.setup-info li {
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+/* Стили для эмодзи и бейджей из jChat */
+.badge {
+    vertical-align: middle;
+    border-radius: 10%;
+    width: 1em;
+    height: 1em;
+    margin-right: 0.2em;
+}
+
+.emote {
+    vertical-align: middle;
+    height: 1.2em;
+    max-height: 1.2em;
+}
+
+.emote.upscale {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+.cheer_emote {
+    vertical-align: middle;
+    height: 1.2em;
+    max-height: 1.2em;
+}
+
+.cheer_bits {
+    color: rgb(189, 98, 255);
+    font-size: 0.6em;
+    -webkit-text-stroke: 1px black;
+    font-weight: bold;
+}
+
+.emoji {
+    vertical-align: middle;
+}
+
+.zero-width_container {
+    display: inline-block;
+    position: relative;
+}
+
+.zero-width {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
