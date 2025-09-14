@@ -29,7 +29,7 @@ body {
     width: 100%;
     min-width: 300px;
     min-height: 200px;
-    background: transparent;
+    background: var(--fallback-bg, transparent);
     backdrop-filter: none;
     border: 3px solid #9146ff;
     border-radius: 10px;
@@ -994,4 +994,19 @@ img.emoji {
     background-attachment: scroll !important;
     background-repeat: no-repeat !important;
     background-size: cover !important;
+}
+
+/* Специфичные стили для градиентов фона чата */
+.chat-container[style*="linear-gradient"],
+.chat-container[style*="radial-gradient"],
+.chat-container[style*="conic-gradient"] {
+    background-attachment: scroll !important;
+    background-repeat: no-repeat !important;
+    background-size: cover !important;
+    background-position: center !important;
+}
+
+/* Принудительное применение градиентов */
+.chat-container {
+    background-image: var(--gradient-image, none) !important;
 }

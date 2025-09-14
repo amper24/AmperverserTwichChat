@@ -365,6 +365,15 @@ class TwitchChat {
     }
     
     applySettings() {
+        // Отладочная информация
+        console.log('applySettings called with settings:', {
+            backgroundGradient: this.settings.backgroundGradient,
+            gradientColor1: this.settings.gradientColor1,
+            gradientColor2: this.settings.gradientColor2,
+            gradientDirection: this.settings.gradientDirection,
+            hideBackground: this.settings.hideBackground
+        });
+        
         // Рамка
         if (this.settings.hideBorder) {
             this.chatContainer.classList.add('no-border');
@@ -391,6 +400,7 @@ class TwitchChat {
         }
         
         // Фон
+        console.log('chatContainer element:', this.chatContainer);
         if (this.settings.hideBackground) {
             this.chatContainer.classList.add('no-background');
         } else {
@@ -482,9 +492,17 @@ class TwitchChat {
                     this.chatContainer.style.setProperty('--gradient-color-1', this.settings.gradientColor1);
                     this.chatContainer.style.setProperty('--gradient-color-2', this.settings.gradientColor2);
                     this.chatContainer.style.setProperty('--gradient-direction', this.settings.gradientDirection);
+                    this.chatContainer.style.setProperty('--gradient-image', gradient);
                     
                     // Дополнительный fallback для OBS
                     this.chatContainer.style.setProperty('--fallback-bg', this.settings.gradientColor1);
+                    
+                    // Отладочная информация после применения
+                    console.log('Gradient applied to chatContainer:', {
+                        background: this.chatContainer.style.background,
+                        backgroundImage: this.chatContainer.style.backgroundImage,
+                        computedStyle: window.getComputedStyle(this.chatContainer).background
+                    });
                 } else {
                     this.chatContainer.style.background = this.settings.backgroundColor;
                     this.chatContainer.style.backgroundImage = '';
@@ -538,6 +556,21 @@ class TwitchChat {
         
         // Применяем настройки значков
         
+        // Принудительное применение градиента в конце (на случай переопределения)
+        if (this.settings.backgroundGradient !== 'none' && !this.settings.hideBackground) {
+            const gradient = this.createGradient(
+                this.settings.backgroundGradient,
+                this.settings.gradientColor1,
+                this.settings.gradientColor2,
+                this.settings.gradientDirection
+            );
+            
+            // Принудительно применяем градиент
+            this.chatContainer.style.setProperty('background', gradient, 'important');
+            this.chatContainer.style.setProperty('background-image', gradient, 'important');
+            
+            console.log('Force applied gradient at end of applySettings:', gradient);
+        }
     }
     
     setupMessageListener() {
