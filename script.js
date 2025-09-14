@@ -710,6 +710,20 @@ class TwitchChat {
         setTimeout(() => {
             console.log('⏰ Принудительно создаем тестовое сообщение с глобальными бейджами...');
             this.createTestMessageWithGlobalBadges();
+            
+            // Создаем тестовое сообщение с twitch-recap-2024
+            setTimeout(() => {
+                const testMessage = {
+                    username: 'TestRecap2024',
+                    displayName: 'TestRecap2024',
+                    message: 'Тестовое сообщение с бейджем twitch-recap-2024!',
+                    badges: 'twitch-recap-2024/1',
+                    color: '#FF6B35',
+                    timestamp: new Date().toISOString()
+                };
+                this.addMessage(testMessage);
+                console.log('✅ Тестовое сообщение с twitch-recap-2024 добавлено');
+            }, 1000);
         }, 5000);
         
         // Проверяем состояние кэша через 3 секунды
@@ -1853,6 +1867,11 @@ class TwitchChat {
                 const [badgeType, badgeVersion] = badge.split('/');
                 console.log('🏷️ Обрабатываем бейдж:', badgeType, badgeVersion);
                 
+                // Автоматически загружаем бейдж, если его нет в кэше
+                if (!channelRoleBadges.includes(badgeType)) {
+                    this.loadBadgeOnDemand(badgeType, badgeVersion);
+                }
+                
                 const badgeUrl = this.getBadgeUrl(badgeType, badgeVersion);
                 
                 if (badgeUrl) {
@@ -1873,6 +1892,8 @@ class TwitchChat {
                     }
                 } else {
                     console.log('❌ Не найден URL для бейджа:', badgeType);
+                    // Создаем fallback бейдж для немедленного отображения
+                    this.addFallbackBadge(badgeType, badgeVersion);
                 }
             });
             
@@ -1906,9 +1927,19 @@ class TwitchChat {
             userData.badges.split(',').forEach(badge => {
                 const [badgeType, badgeVersion] = badge.split('/');
                 if (!processedBadges.includes(badgeType)) {
+                    console.log('🔍 Обрабатываем дополнительный бейдж:', badgeType, badgeVersion);
+                    
+                    // Автоматически загружаем бейдж, если его нет в кэше
+                    this.loadBadgeOnDemand(badgeType, badgeVersion);
+                    
                     const badgeUrl = this.getBadgeUrl(badgeType, badgeVersion);
                     if (badgeUrl) {
                         badgeElements.push(`<img class="badge" src="${badgeUrl}" alt="${badgeType}" title="${badgeType}" />`);
+                        console.log('✅ Добавлен дополнительный бейдж:', badgeType);
+                    } else {
+                        console.log('❌ Не найден URL для дополнительного бейджа:', badgeType);
+                        // Создаем fallback бейдж для немедленного отображения
+                        this.addFallbackBadge(badgeType, badgeVersion);
                     }
                 }
             });
@@ -1941,14 +1972,35 @@ class TwitchChat {
             // Ищем бейдж в глобальных или канальных бейджах
             let badgeSet = badges.global[badgeType] || badges.channel[badgeType];
             
+            console.log('🔍 Ищем бейдж в кэше:', {
+                badgeType: badgeType,
+                badgeVersion: badgeVersion,
+                hasGlobal: !!badges.global[badgeType],
+                hasChannel: !!badges.channel[badgeType],
+                globalKeys: Object.keys(badges.global || {}),
+                channelKeys: Object.keys(badges.channel || {})
+            });
+            
             if (badgeSet && badgeSet.versions) {
                 const version = badgeSet.versions[badgeVersion] || badgeSet.versions['1'];
                 const url = version?.image_url_1x || version?.image_url_2x || version?.image_url_4x;
                 if (url) {
                     console.log('✅ Найден значок в кэше:', url);
                     return url;
+                } else {
+                    console.log('❌ Версия бейджа не найдена:', badgeVersion, 'Доступные версии:', Object.keys(badgeSet.versions));
                 }
+            } else {
+                console.log('❌ Бейдж не найден в кэше:', badgeType);
             }
+        } else {
+            console.log('❌ Кэш не найден');
+        }
+        
+        // Если бейдж не найден, загружаем его по требованию
+        if (!isChannelBadge) {
+            console.log('🔄 Бейдж не найден, загружаем по требованию:', badgeType);
+            this.loadBadgeOnDemand(badgeType, badgeVersion);
         }
         
         // Fallback на простые и надежные URL значков (включая глобальные)
@@ -1963,7 +2015,12 @@ class TwitchChat {
             'global_mod': 'https://static-cdn.jtvnw.net/badges/v1/9388c43e-4ce7-4e94-b2a1-b936d6e4824a/1',
             'staff': 'https://static-cdn.jtvnw.net/badges/v1/d97c37bd-a6f5-4c38-8d57-2856b5b7a1c2/1',
             'twitchbot': 'https://static-cdn.jtvnw.net/badges/v1/df09a657-6074-41a7-a59c-70c930a2c002/1',
-            'predictions': 'https://static-cdn.jtvnw.net/badges/v1/bf7dacf3-8251-468e-81b1-eb7e8b5c4b6a/1'
+            'predictions': 'https://static-cdn.jtvnw.net/badges/v1/bf7dacf3-8251-468e-81b1-eb7e8b5c4b6a/1',
+            // Специальные бейджи 2024
+            'twitch-recap-2024': 'https://static-cdn.jtvnw.net/badges/v1/bf7dacf3-8251-468e-81b1-eb7e8b5c4b6a/1',
+            'silksong-2024': 'https://static-cdn.jtvnw.net/badges/v1/silksong-2024/1',
+            'minecraft-2024': 'https://static-cdn.jtvnw.net/badges/v1/minecraft-2024/1',
+            'game-awards-2024': 'https://static-cdn.jtvnw.net/badges/v1/game-awards-2024/1'
         };
         
         const fallbackUrl = knownBadgeUrls[badgeType];
@@ -2797,6 +2854,102 @@ class TwitchChat {
         
         // Тестируем загрузку глобальных бейджей
         this.testGlobalBadges();
+    }
+    
+    // Загрузка бейджей по требованию (когда видим их у пользователя)
+    loadBadgeOnDemand(badgeType, badgeVersion) {
+        console.log('🔄 Загружаем бейдж по требованию:', badgeType, badgeVersion);
+        
+        // Проверяем, есть ли уже этот бейдж в кэше
+        const globalCache = this.badgeCache.get('global')?.global || {};
+        if (globalCache[badgeType]) {
+            console.log('✅ Бейдж уже есть в кэше:', badgeType);
+            return;
+        }
+        
+        // Пробуем загрузить бейдж через API
+        this.loadSingleBadgeFromAPI(badgeType, badgeVersion);
+    }
+    
+    // Загрузка одного бейджа через API
+    loadSingleBadgeFromAPI(badgeType, badgeVersion) {
+        console.log('🌐 Загружаем бейдж через API:', badgeType);
+        
+        const headers = {
+            'Client-ID': this.twitchClientId,
+            'Accept': 'application/vnd.twitchtv.v5+json'
+        };
+        
+        if (this.twitchOAuthToken) {
+            headers['Authorization'] = `Bearer ${this.twitchOAuthToken}`;
+        }
+        
+        // Пробуем загрузить через Helix API
+        fetch('https://api.twitch.tv/helix/chat/badges/global', {
+            headers: headers
+        })
+        .then(res => {
+            if (res.ok) {
+                return res.json();
+            } else {
+                throw new Error(`API недоступен: ${res.status}`);
+            }
+        })
+        .then(data => {
+            if (data.data) {
+                const badge = data.data.find(b => b.set_id === badgeType);
+                if (badge) {
+                    this.addBadgeToCache(badgeType, badge);
+                    console.log('✅ Бейдж загружен и добавлен в кэш:', badgeType);
+                } else {
+                    console.log('⚠️ Бейдж не найден в API:', badgeType);
+                    this.addFallbackBadge(badgeType, badgeVersion);
+                }
+            }
+        })
+        .catch(err => {
+            console.log('⚠️ Ошибка загрузки бейджа:', err.message);
+            this.addFallbackBadge(badgeType, badgeVersion);
+        });
+    }
+    
+    // Добавление бейджа в кэш
+    addBadgeToCache(badgeType, badgeData) {
+        if (!this.badgeCache.has('global')) {
+            this.badgeCache.set('global', { global: {}, channel: {} });
+        }
+        
+        const globalCache = this.badgeCache.get('global').global;
+        globalCache[badgeType] = {
+            set_id: badgeType,
+            versions: badgeData.versions || {}
+        };
+    }
+    
+    // Добавление fallback бейджа
+    addFallbackBadge(badgeType, badgeVersion) {
+        console.log('🔄 Добавляем fallback бейдж:', badgeType);
+        
+        if (!this.badgeCache.has('global')) {
+            this.badgeCache.set('global', { global: {}, channel: {} });
+        }
+        
+        const globalCache = this.badgeCache.get('global').global;
+        
+        // Создаем fallback бейдж с базовым URL
+        globalCache[badgeType] = {
+            set_id: badgeType,
+            versions: {
+                [badgeVersion || '1']: {
+                    id: badgeVersion || '1',
+                    image_url_1x: `https://static-cdn.jtvnw.net/badges/v1/${badgeType}/1`,
+                    image_url_2x: `https://static-cdn.jtvnw.net/badges/v1/${badgeType}/2`,
+                    image_url_4x: `https://static-cdn.jtvnw.net/badges/v1/${badgeType}/3`
+                }
+            }
+        };
+        
+        console.log('✅ Fallback бейдж добавлен:', badgeType);
     }
     
     // Тестирование глобальных бейджей
