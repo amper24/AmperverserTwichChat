@@ -675,16 +675,16 @@ class TwitchChat {
         try {
             // Используем название канала как ID
             const channelId = this.channel;
-            this.channelId = channelId;
-            
-            // Загружаем эмодзи
-            this.loadEmotes(channelId);
-            
+                this.channelId = channelId;
+                
+                // Загружаем эмодзи
+                this.loadEmotes(channelId);
+                
             // Загружаем бейджи через новую систему
             this.loadAllBadges();
-            
-            // Загружаем cheers/bits
-            this.loadCheers(channelId);
+                
+                // Загружаем cheers/bits
+                this.loadCheers(channelId);
                 
                 console.log('All data loaded for channel:', this.channel);
         } catch (error) {
@@ -2601,11 +2601,55 @@ class TwitchChat {
             this.badgeCache.set('global', { global: {}, channel: {} });
         }
         
+        // Загружаем fallback бейджи для немедленного использования
+        this.loadFallbackBadges();
+        
         // Загружаем глобальные бейджи
         this.loadGlobalBadgesFromTwitch();
         
-        // Загружаем fallback бейджи для немедленного использования
-        this.loadFallbackBadges();
+        // Получаем числовой ID канала и загружаем его бейджи
+        this.getChannelIdAndLoadBadges();
+    }
+    
+    // Получение числового ID канала через Twitch API
+    async getChannelIdAndLoadBadges() {
+        if (!this.channel) {
+            console.log('⚠️ Название канала не указано');
+            return;
+        }
+        
+        console.log('🔍 Получаем числовой ID канала:', this.channel);
+        
+        const headers = {
+            'Client-ID': this.twitchClientId
+        };
+        
+        if (this.twitchOAuthToken) {
+            headers['Authorization'] = `Bearer ${this.twitchOAuthToken}`;
+        }
+        
+        try {
+            const response = await fetch(`https://api.twitch.tv/helix/users?login=${this.channel}`, { headers });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.data && data.data.length > 0) {
+                const channelId = data.data[0].id;
+                this.channelNumericId = channelId;
+                console.log('✅ Получен числовой ID канала:', channelId);
+                
+                // Загружаем бейджи канала
+                this.loadChannelBadgesFromTwitch();
+            } else {
+                console.log('❌ Канал не найден:', this.channel);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка получения ID канала:', error);
+        }
     }
     
     // Загрузка глобальных бейджей с Twitch API
@@ -2613,25 +2657,32 @@ class TwitchChat {
         console.log('🌐 Загружаем глобальные бейджи с Twitch API...');
         
         const headers = {
-            'Client-ID': this.twitchClientId,
-            'Accept': 'application/vnd.twitchtv.v5+json'
+            'Client-ID': this.twitchClientId
         };
         
         if (this.twitchOAuthToken) {
             headers['Authorization'] = `Bearer ${this.twitchOAuthToken}`;
             console.log('🔐 Используем OAuth токен для глобальных бейджей');
+        } else {
+            console.log('⚠️ OAuth токен не установлен, используем только Client-ID');
         }
         
         fetch('https://api.twitch.tv/helix/chat/badges/global', { headers })
             .then(res => {
-                console.log('📡 Глобальные бейджи - статус:', res.status);
+                console.log('📡 Глобальные бейджи - статус:', res.status, res.statusText);
                 if (!res.ok) {
+                    if (res.status === 401) {
+                        console.error('❌ Ошибка авторизации (401). Проверьте OAuth токен.');
+                    } else if (res.status === 400) {
+                        console.error('❌ Ошибка запроса (400). Проверьте параметры запроса.');
+                    }
                     throw new Error(`HTTP ${res.status}: ${res.statusText}`);
                 }
                 return res.json();
             })
             .then(data => {
                 console.log('✅ Глобальные бейджи загружены:', data.data?.length || 0);
+                console.log('📋 Данные API:', data);
                 
                 if (data.data && Array.isArray(data.data)) {
                     const globalBadges = {};
@@ -2658,25 +2709,32 @@ class TwitchChat {
         console.log('🏠 Загружаем бейджи канала с Twitch API...', this.channelNumericId);
         
         const headers = {
-            'Client-ID': this.twitchClientId,
-            'Accept': 'application/vnd.twitchtv.v5+json'
+            'Client-ID': this.twitchClientId
         };
         
         if (this.twitchOAuthToken) {
             headers['Authorization'] = `Bearer ${this.twitchOAuthToken}`;
             console.log('🔐 Используем OAuth токен для бейджей канала');
+        } else {
+            console.log('⚠️ OAuth токен не установлен, используем только Client-ID');
         }
         
         fetch(`https://api.twitch.tv/helix/chat/badges?broadcaster_id=${this.channelNumericId}`, { headers })
             .then(res => {
-                console.log('📡 Бейджи канала - статус:', res.status);
+                console.log('📡 Бейджи канала - статус:', res.status, res.statusText);
                 if (!res.ok) {
+                    if (res.status === 401) {
+                        console.error('❌ Ошибка авторизации (401). Проверьте OAuth токен.');
+                    } else if (res.status === 400) {
+                        console.error('❌ Ошибка запроса (400). Проверьте параметры запроса.');
+                    }
                     throw new Error(`HTTP ${res.status}: ${res.statusText}`);
                 }
                 return res.json();
             })
             .then(data => {
                 console.log('✅ Бейджи канала загружены:', data.data?.length || 0);
+                console.log('📋 Данные API канала:', data);
                 
                 if (data.data && Array.isArray(data.data)) {
                     const channelBadges = {};
@@ -2859,4 +2917,4 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
-// Version: 20250127120002 - New badge system
+// Version: 20250127120003 - Fixed Twitch API badges according to official docs
