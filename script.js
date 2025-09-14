@@ -87,12 +87,8 @@ class TwitchChat {
         }
         
         this.loadSettings().then(() => {
-        this.loadChannelFromURL();
+            this.loadChannelFromURL();
             this.showImageLoadStatus();
-            // Добавляем тестовое сообщение для проверки
-            setTimeout(() => {
-                this.addSystemMessage('🔧 Тестовое сообщение для проверки отображения');
-            }, 1000);
         });
         console.log('Chat settings after load:', {
             appearAnimation: this.settings.appearAnimation,
@@ -398,9 +394,18 @@ class TwitchChat {
                         this.settings.gradientColor2,
                         this.settings.gradientDirection
                     );
+                    
+                    // Применяем градиент несколькими способами для лучшей совместимости
                     this.chatContainer.style.background = gradient;
+                    this.chatContainer.style.backgroundImage = gradient;
+                    
+                    // Устанавливаем CSS переменные для fallback
+                    this.chatContainer.style.setProperty('--gradient-color-1', this.settings.gradientColor1);
+                    this.chatContainer.style.setProperty('--gradient-color-2', this.settings.gradientColor2);
+                    this.chatContainer.style.setProperty('--gradient-direction', this.settings.gradientDirection);
                 } else {
                     this.chatContainer.style.background = this.settings.backgroundColor;
+                    this.chatContainer.style.backgroundImage = '';
                 }
                 
                 this.chatContainer.style.backdropFilter = 'blur(10px)';
@@ -464,7 +469,6 @@ class TwitchChat {
     
     reconnectToChat() {
         this.disconnect();
-        this.addSystemMessage('🔄 Переподключение...');
         setTimeout(() => {
             this.connectToChat();
         }, 1000);
@@ -617,25 +621,16 @@ class TwitchChat {
             this.socket.onclose = () => {
                 this.isConnected = false;
                 console.log('IRC соединение закрыто');
-                // Если IRC не работает, показываем сообщение об ожидании
-                this.addSystemMessage('⚠️ IRC подключение недоступно');
-                this.addSystemMessage('🔗 Ожидание сообщений из чата...');
             };
             
             this.socket.onerror = (error) => {
                 console.log('IRC ошибка:', error);
                 this.isConnected = false;
-                // Если IRC не работает, показываем сообщение об ожидании
-                this.addSystemMessage('⚠️ IRC подключение недоступно');
-                this.addSystemMessage('🔗 Ожидание сообщений из чата...');
             };
             
         } catch (error) {
             console.log('Ошибка IRC подключения:', error);
             this.isConnected = false;
-            // Если IRC не работает, показываем сообщение об ожидании
-            this.addSystemMessage('⚠️ IRC подключение недоступно');
-            this.addSystemMessage('🔗 Ожидание сообщений из чата...');
         }
     }
     
@@ -2199,6 +2194,11 @@ class TwitchChat {
                 this.settings.messageGradientDirection
             );
             backgrounds.push(gradient);
+            
+            // Устанавливаем CSS переменные для fallback
+            messageElement.style.setProperty('--message-gradient-color-1', this.settings.messageGradientColor1);
+            messageElement.style.setProperty('--message-gradient-color-2', this.settings.messageGradientColor2);
+            messageElement.style.setProperty('--message-gradient-direction', this.settings.messageGradientDirection);
         } else {
             // Базовый цвет фона с прозрачностью
             const baseColor = this.hexToRgba(this.settings.messageBackgroundColor, this.settings.messageBackgroundOpacity / 100);
@@ -2222,13 +2222,36 @@ class TwitchChat {
     
     // Метод для создания градиента
     createGradient(gradientType, color1, color2, direction) {
+        // Проверяем поддержку градиентов в браузере
+        const testElement = document.createElement('div');
+        const hasGradientSupport = testElement.style.background && 
+            (testElement.style.background.includes('gradient') || 
+             testElement.style.backgroundImage);
+        
+        if (!hasGradientSupport) {
+            // Fallback для старых браузеров или OBS
+            return color1;
+        }
+        
         switch (gradientType) {
             case 'linear':
-                return `linear-gradient(${direction}, ${color1}, ${color2})`;
+                // Упрощаем направление для лучшей совместимости
+                let simplifiedDirection = direction;
+                if (direction === 'to right') simplifiedDirection = '90deg';
+                else if (direction === 'to left') simplifiedDirection = '270deg';
+                else if (direction === 'to bottom') simplifiedDirection = '180deg';
+                else if (direction === 'to top') simplifiedDirection = '0deg';
+                else if (direction === 'to bottom right') simplifiedDirection = '135deg';
+                else if (direction === 'to bottom left') simplifiedDirection = '225deg';
+                else if (direction === 'to top right') simplifiedDirection = '45deg';
+                else if (direction === 'to top left') simplifiedDirection = '315deg';
+                
+                return `linear-gradient(${simplifiedDirection}, ${color1}, ${color2})`;
             case 'radial':
-                return `radial-gradient(circle, ${color1}, ${color2})`;
+                return `radial-gradient(circle at center, ${color1}, ${color2})`;
             case 'conic':
-                return `conic-gradient(from 0deg, ${color1}, ${color2})`;
+                // Conic градиенты могут не поддерживаться в OBS
+                return `linear-gradient(45deg, ${color1}, ${color2})`;
             default:
                 return color1;
         }

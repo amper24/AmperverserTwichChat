@@ -943,3 +943,24 @@ img.emoji {
     top: 0;
     left: 0;
 }
+
+/* Fallback для градиентов в OBS */
+.chat-container {
+    /* Fallback для градиентов фона */
+    background: var(--gradient-color-1, transparent);
+}
+
+.chat-container[style*="gradient"] {
+    /* Если градиент не поддерживается, используем первый цвет */
+    background: var(--gradient-color-1, transparent) !important;
+}
+
+.chat-message {
+    /* Fallback для градиентов сообщений */
+    background: var(--message-gradient-color-1, transparent);
+}
+
+.chat-message[style*="gradient"] {
+    /* Если градиент не поддерживается, используем первый цвет */
+    background: var(--message-gradient-color-1, transparent) !important;
+}
