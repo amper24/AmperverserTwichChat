@@ -673,18 +673,20 @@ class TwitchChat {
         
         // Загружаем все данные для канала (как в jChat v2)
         try {
-            // Получаем ID канала
-            this.getChannelId().then(channelId => {
-                this.channelId = channelId;
-                
-                // Загружаем эмодзи
-                this.loadEmotes(channelId);
-                
-                // Загружаем бейджи
+            // Используем название канала как ID
+            const channelId = this.channel;
+            this.channelId = channelId;
+            
+            // Загружаем эмодзи
+            this.loadEmotes(channelId);
+            
+            // Загружаем бейджи (отложенно, чтобы дождаться числового ID)
+            setTimeout(() => {
                 this.loadBadges(channelId);
-                
-                // Загружаем cheers/bits
-                this.loadCheers(channelId);
+            }, 2000);
+            
+            // Загружаем cheers/bits
+            this.loadCheers(channelId);
                 
                 // Загружаем дополнительные бейджи
                 this.loadAdditionalBadges();
@@ -694,7 +696,6 @@ class TwitchChat {
                 this.loadTwitchGlobalBadges();
                 
                 console.log('All data loaded for channel:', this.channel);
-            });
         } catch (error) {
             console.error('Failed to load channel data:', error);
         }
@@ -967,6 +968,14 @@ class TwitchChat {
                     if (!this.userBadges[nick]) {
                         this.loadUserBadges(nick, message.tags['user-id']);
                     }
+                }
+
+                // Загружаем бейджи канала при получении первого сообщения с room-id
+                if (message.tags['room-id'] && !this.channelNumericId) {
+                    this.channelNumericId = message.tags['room-id'];
+                    console.log('🔢 Получен числовой ID канала из сообщения:', this.channelNumericId);
+                    // Загружаем бейджи канала с правильным ID
+                    this.loadTwitchChannelBadges(this.channel);
                 }
 
                 this.addChatMessage(nick, message.params[1], message.tags);
@@ -2387,11 +2396,30 @@ class TwitchChat {
             return;
         }
         
-        fetch(`https://api.twitch.tv/helix/chat/badges?broadcaster_id=${channelId}`, {
-            headers: {
-                'Client-ID': this.twitchClientId,
-                'Accept': 'application/vnd.twitchtv.v5+json'
-            }
+        // Получаем числовой ID канала
+        const numericChannelId = this.getChannelNumericId();
+        if (!numericChannelId) {
+            console.log('⚠️ Числовой ID канала не найден, используем fallback бейджи');
+            return;
+        }
+        
+        console.log('🔢 Используем числовой ID канала для API:', numericChannelId);
+        
+        const headers = {
+            'Client-ID': this.twitchClientId,
+            'Accept': 'application/vnd.twitchtv.v5+json'
+        };
+        
+        // Добавляем OAuth токен если есть
+        if (this.twitchOAuthToken) {
+            headers['Authorization'] = `Bearer ${this.twitchOAuthToken}`;
+            console.log('🔐 Используем OAuth токен для загрузки бейджей канала');
+        } else {
+            console.log('⚠️ OAuth токен не установлен, используем только Client-ID');
+        }
+        
+        fetch(`https://api.twitch.tv/helix/chat/badges?broadcaster_id=${numericChannelId}`, {
+            headers: headers
         })
             .then(res => {
                 if (!res.ok) {
@@ -2594,3 +2622,4 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
+// Version: 20250127120001 - Fixed getChannelId error
