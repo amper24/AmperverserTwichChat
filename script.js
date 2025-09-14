@@ -721,7 +721,7 @@ class TwitchChat {
                     color: '#FF6B35',
                     timestamp: new Date().toISOString()
                 };
-                this.addMessage(testMessage);
+                this.addChatMessage(testMessage.username, testMessage.message, testMessage);
                 console.log('✅ Тестовое сообщение с twitch-recap-2024 добавлено');
             }, 1000);
         }, 5000);
@@ -2738,14 +2738,20 @@ class TwitchChat {
         // Проверяем глобальный кэш
         const globalCache = this.badgeCache.get('global');
         if (globalCache && globalCache.global[badgeType]) {
-            return globalCache.global[badgeType][badgeVersion]?.image_url_1x;
+            const badgeData = globalCache.global[badgeType];
+            if (badgeData.versions && badgeData.versions[badgeVersion]) {
+                return badgeData.versions[badgeVersion].image_url_1x;
+            }
         }
         
         // Проверяем кэш канала
         const channelId = this.channelId || 'global';
         const channelCache = this.badgeCache.get(channelId);
         if (channelCache && channelCache.channel[badgeType]) {
-            return channelCache.channel[badgeType][badgeVersion]?.image_url_1x;
+            const badgeData = channelCache.channel[badgeType];
+            if (badgeData.versions && badgeData.versions[badgeVersion]) {
+                return badgeData.versions[badgeVersion].image_url_1x;
+            }
         }
         
         return null;
@@ -2782,6 +2788,9 @@ class TwitchChat {
         
         if (this.twitchOAuthToken) {
             headers['Authorization'] = `Bearer ${this.twitchOAuthToken}`;
+            console.log('🔐 Используем OAuth токен для авторизации');
+        } else {
+            console.log('⚠️ OAuth токен не установлен, используем только Client-ID');
         }
         
         // Определяем, глобальный это бейдж или канальный
@@ -2807,7 +2816,13 @@ class TwitchChat {
         
         fetch(apiUrl, { headers })
             .then(response => {
+                console.log('📡 Ответ от API:', response.status, response.statusText);
                 if (!response.ok) {
+                    if (response.status === 401) {
+                        console.error('❌ Ошибка авторизации (401). Проверьте OAuth токен.');
+                    } else if (response.status === 400) {
+                        console.error('❌ Ошибка запроса (400). Проверьте параметры запроса.');
+                    }
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 return response.json();
@@ -2852,10 +2867,8 @@ class TwitchChat {
         }
         
         const globalCache = this.badgeCache.get('global').global;
-        globalCache[badgeType] = {
-            set_id: badgeType,
-            versions: badgeData.versions || {}
-        };
+        globalCache[badgeType] = badgeData;
+        console.log('✅ Бейдж добавлен в кэш:', badgeType, badgeData);
     }
     
     // Добавление fallback бейджа
@@ -2926,7 +2939,7 @@ class TwitchChat {
         
         // Добавляем сообщение в чат
         setTimeout(() => {
-            this.addMessage(testMessage);
+            this.addChatMessage(testMessage.username, testMessage.message, testMessage);
             console.log('✅ Тестовое сообщение добавлено в чат');
             
             // Создаем второе тестовое сообщение с комбинацией бейджей
@@ -2940,7 +2953,7 @@ class TwitchChat {
             };
             
             setTimeout(() => {
-                this.addMessage(testMessage2);
+                this.addChatMessage(testMessage2.username, testMessage2.message, testMessage2);
                 console.log('✅ Второе тестовое сообщение добавлено в чат');
                 
                 // Создаем третье тестовое сообщение с пользовательскими бейджами 2024
@@ -2978,7 +2991,7 @@ class TwitchChat {
             };
             
             setTimeout(() => {
-                this.addMessage(testMessage3);
+                this.addChatMessage(testMessage3.username, testMessage3.message, testMessage3);
                 console.log('✅ Тестовое сообщение со специальными бейджами добавлено в чат');
                 console.log('🎊 Использованы бейджи:', selectedBadges);
             }, 3000);
