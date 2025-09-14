@@ -92,7 +92,7 @@ body {
 
 .message {
     margin-bottom: 3px;
-    padding: 4px 8px;
+    padding: 4px 4px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     word-wrap: break-word;

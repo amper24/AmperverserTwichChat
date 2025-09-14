@@ -986,7 +986,7 @@ body {
 
 .preview-message {
     margin-bottom: 2px;
-    padding: 4px 8px;
+    padding: 4px 4px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 6px;
     word-wrap: break-word;
@@ -1268,16 +1268,16 @@ body {
 .preview-message .username {
     color: #9146ff;
     font-weight: bold;
-    margin-right: 2px;
+    margin-right: 0 !important;
     display: inline-flex;
     align-items: baseline;
-    gap: 2px;
+    gap: 1px;
 }
 
 .preview-message .badge {
     width: 1.1em;
     height: 1.1em;
-    margin-right: 0.3em;
+    margin-right: 0 !important;
     display: inline-block;
     vertical-align: baseline;
     object-fit: contain;
