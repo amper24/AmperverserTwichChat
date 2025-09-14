@@ -1877,29 +1877,6 @@ class TwitchChat {
             });
         }
         
-        // Добавляем остальные Twitch бейджи (которые не были обработаны выше)
-        if (typeof(userData.badges) === 'string') {
-            const processedBadges = ['broadcaster', 'moderator', 'vip', 'subscriber', 'admin', 'global_mod', 'staff', 'twitchbot', 'predictions'];
-            userData.badges.split(',').forEach(badge => {
-                const [badgeType, badgeVersion] = badge.split('/');
-                if (!processedBadges.includes(badgeType)) {
-                    console.log('🔍 Обрабатываем дополнительный бейдж:', badgeType, badgeVersion);
-                    
-                    // Автоматически загружаем бейдж, если его нет в кэше
-                    this.loadBadgeOnDemand(badgeType, badgeVersion);
-                    
-                    const badgeUrl = this.getBadgeUrl(badgeType, badgeVersion);
-                    if (badgeUrl) {
-                        badgeElements.push(`<img class="badge" src="${badgeUrl}" alt="${badgeType}" title="${badgeType}" />`);
-                        console.log('✅ Добавлен дополнительный бейдж:', badgeType);
-                    } else {
-                        console.log('❌ Не найден URL для дополнительного бейджа:', badgeType);
-                        // Создаем fallback бейдж для немедленного отображения
-                        this.addFallbackBadge(badgeType, badgeVersion);
-                    }
-                }
-            });
-        }
         
         return badgeElements.join('');
     }
@@ -2774,6 +2751,27 @@ class TwitchChat {
         return null;
     }
     
+    // Получение числового ID канала
+    getChannelNumericId() {
+        // Если уже сохранен числовой ID канала
+        if (this.channelNumericId) {
+            return this.channelNumericId;
+        }
+        
+        // Ищем ID канала в последних сообщениях
+        if (this.chatMessages && this.chatMessages.length > 0) {
+            for (let i = this.chatMessages.length - 1; i >= 0; i--) {
+                const message = this.chatMessages[i];
+                if (message.roomId) {
+                    this.channelNumericId = message.roomId;
+                    console.log('✅ Сохранен числовой ID канала:', this.channelNumericId);
+                    return this.channelNumericId;
+                }
+            }
+        }
+        return null;
+    }
+    
     // Загрузка бейджа через Twitch API
     loadBadgeFromTwitchAPI(badgeType, badgeVersion, badgeElements) {
         console.log('🌐 Загружаем бейдж через Twitch API:', badgeType);
@@ -2792,8 +2790,16 @@ class TwitchChat {
         
         let apiUrl;
         if (isChannelBadge) {
-            // Канальные бейджи
-            apiUrl = `https://api.twitch.tv/helix/chat/badges?broadcaster_id=${this.channelId}`;
+            // Канальные бейджи - используем числовой ID канала
+            const channelNumericId = this.getChannelNumericId();
+            if (channelNumericId) {
+                apiUrl = `https://api.twitch.tv/helix/chat/badges?broadcaster_id=${channelNumericId}`;
+            } else {
+                // Если нет числового ID, используем fallback
+                console.log('⚠️ Нет числового ID канала, используем fallback для канального бейджа');
+                this.addFallbackBadge(badgeType, badgeVersion, badgeElements);
+                return;
+            }
         } else {
             // Глобальные бейджи
             apiUrl = 'https://api.twitch.tv/helix/chat/badges/global';
