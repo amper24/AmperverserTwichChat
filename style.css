@@ -20,8 +20,9 @@ body {
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 20px;
+    align-items: flex-start;
+    padding: 20px 20px 0 20px;
+    margin: 0;
 }
 
 .chat-container {
@@ -947,20 +948,37 @@ img.emoji {
 /* Fallback для градиентов в OBS */
 .chat-container {
     /* Fallback для градиентов фона */
-    background: var(--gradient-color-1, transparent);
+    background: var(--fallback-bg, var(--gradient-color-1, transparent));
+    /* Дополнительные стили для OBS */
+    position: relative;
+    overflow: hidden;
 }
 
 .chat-container[style*="gradient"] {
     /* Если градиент не поддерживается, используем первый цвет */
-    background: var(--gradient-color-1, transparent) !important;
+    background: var(--fallback-bg, var(--gradient-color-1, transparent)) !important;
 }
 
 .chat-message {
     /* Fallback для градиентов сообщений */
-    background: var(--message-gradient-color-1, transparent);
+    background: var(--message-fallback-bg, var(--message-gradient-color-1, transparent));
+    /* Дополнительные стили для OBS */
+    position: relative;
+    overflow: hidden;
 }
 
 .chat-message[style*="gradient"] {
     /* Если градиент не поддерживается, используем первый цвет */
-    background: var(--message-gradient-color-1, transparent) !important;
+    background: var(--message-fallback-bg, var(--message-gradient-color-1, transparent)) !important;
+}
+
+/* Дополнительные стили для лучшей совместимости с OBS */
+.chat-container,
+.chat-message {
+    /* Убираем все эффекты, которые могут не работать в OBS */
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    will-change: auto;
 }

@@ -403,9 +403,13 @@ class TwitchChat {
                     this.chatContainer.style.setProperty('--gradient-color-1', this.settings.gradientColor1);
                     this.chatContainer.style.setProperty('--gradient-color-2', this.settings.gradientColor2);
                     this.chatContainer.style.setProperty('--gradient-direction', this.settings.gradientDirection);
+                    
+                    // Дополнительный fallback для OBS
+                    this.chatContainer.style.setProperty('--fallback-bg', this.settings.gradientColor1);
                 } else {
                     this.chatContainer.style.background = this.settings.backgroundColor;
                     this.chatContainer.style.backgroundImage = '';
+                    this.chatContainer.style.setProperty('--fallback-bg', this.settings.backgroundColor);
                 }
                 
                 this.chatContainer.style.backdropFilter = 'blur(10px)';
@@ -487,8 +491,7 @@ class TwitchChat {
                 // Проверяем подключение через 3 секунды
                 setTimeout(() => {
                     if (!this.isConnected) {
-                        this.addSystemMessage(`✅ Подключение к каналу ${this.channel}`);
-                        this.addSystemMessage('🔗 Ожидание сообщений из чата...');
+                        // Уведомления о подключении убраны
                     }
                 }, 3000);
             } else {
@@ -502,8 +505,7 @@ class TwitchChat {
                     // Проверяем подключение через 3 секунды
                     setTimeout(() => {
                         if (!this.isConnected) {
-                            this.addSystemMessage(`✅ Подключение к каналу ${this.channel}`);
-                            this.addSystemMessage('🔗 Ожидание сообщений из чата...');
+                            // Уведомления о подключении убраны
                         }
                     }, 3000);
                 } else {
@@ -589,8 +591,7 @@ class TwitchChat {
         // Проверяем подключение через 4 секунды, если ничего не сработало
         setTimeout(() => {
             if (!this.isConnected) {
-                this.addSystemMessage(`✅ Подключение к каналу ${this.channel}`);
-                this.addSystemMessage('🔗 Ожидание сообщений из чата...');
+                // Уведомления о подключении убраны
             }
         }, 4000);
     }
@@ -916,15 +917,11 @@ class TwitchChat {
     async connectViaAPI() {
         try {
             // Twitch Helix API требует OAuth токен, поэтому пропускаем проверку
-                    this.isConnected = true;
-            this.addSystemMessage(`✅ Подключение к каналу: ${this.channel}`);
-            this.addSystemMessage('🔗 Ожидание сообщений из чата...');
+            this.isConnected = true;
             
         } catch (error) {
             console.log('API ошибка:', error);
             this.isConnected = true;
-            this.addSystemMessage(`✅ Подключение к каналу: ${this.channel}`);
-            this.addSystemMessage('🔗 Ожидание сообщений из чата...');
         }
     }
     
@@ -1164,7 +1161,6 @@ class TwitchChat {
             case "JOIN":
                 console.log('jChat: Joined channel #' + this.channel);
                 this.isConnected = true;
-                this.addSystemMessage(`✅ Подключен к каналу ${this.channel}`);
                 return;
             case "CLEARMSG":
                 if (message.tags) {
@@ -2199,6 +2195,7 @@ class TwitchChat {
             messageElement.style.setProperty('--message-gradient-color-1', this.settings.messageGradientColor1);
             messageElement.style.setProperty('--message-gradient-color-2', this.settings.messageGradientColor2);
             messageElement.style.setProperty('--message-gradient-direction', this.settings.messageGradientDirection);
+            messageElement.style.setProperty('--message-fallback-bg', this.settings.messageGradientColor1);
         } else {
             // Базовый цвет фона с прозрачностью
             const baseColor = this.hexToRgba(this.settings.messageBackgroundColor, this.settings.messageBackgroundOpacity / 100);
@@ -2222,35 +2219,25 @@ class TwitchChat {
     
     // Метод для создания градиента
     createGradient(gradientType, color1, color2, direction) {
-        // Проверяем поддержку градиентов в браузере
-        const testElement = document.createElement('div');
-        const hasGradientSupport = testElement.style.background && 
-            (testElement.style.background.includes('gradient') || 
-             testElement.style.backgroundImage);
-        
-        if (!hasGradientSupport) {
-            // Fallback для старых браузеров или OBS
-            return color1;
-        }
-        
+        // Для OBS используем только простые градиенты
         switch (gradientType) {
             case 'linear':
-                // Упрощаем направление для лучшей совместимости
-                let simplifiedDirection = direction;
-                if (direction === 'to right') simplifiedDirection = '90deg';
-                else if (direction === 'to left') simplifiedDirection = '270deg';
-                else if (direction === 'to bottom') simplifiedDirection = '180deg';
-                else if (direction === 'to top') simplifiedDirection = '0deg';
-                else if (direction === 'to bottom right') simplifiedDirection = '135deg';
-                else if (direction === 'to bottom left') simplifiedDirection = '225deg';
-                else if (direction === 'to top right') simplifiedDirection = '45deg';
-                else if (direction === 'to top left') simplifiedDirection = '315deg';
+                // Используем только градусы для лучшей совместимости с OBS
+                let angle = 90; // по умолчанию
+                if (direction === 'to right') angle = 90;
+                else if (direction === 'to left') angle = 270;
+                else if (direction === 'to bottom') angle = 180;
+                else if (direction === 'to top') angle = 0;
+                else if (direction === 'to bottom right') angle = 135;
+                else if (direction === 'to bottom left') angle = 225;
+                else if (direction === 'to top right') angle = 45;
+                else if (direction === 'to top left') angle = 315;
                 
-                return `linear-gradient(${simplifiedDirection}, ${color1}, ${color2})`;
+                return `linear-gradient(${angle}deg, ${color1}, ${color2})`;
             case 'radial':
-                return `radial-gradient(circle at center, ${color1}, ${color2})`;
+                return `radial-gradient(circle, ${color1}, ${color2})`;
             case 'conic':
-                // Conic градиенты могут не поддерживаться в OBS
+                // Conic градиенты не поддерживаются в OBS, используем linear
                 return `linear-gradient(45deg, ${color1}, ${color2})`;
             default:
                 return color1;
