@@ -1736,7 +1736,7 @@ class ChatEditor {
         // Обрабатываем эмодзи в тексте сообщения
         const processedText = this.processEmotes(text);
         
-        messageElement.innerHTML = `<span class="username" style="color: ${userColor}">${badges}${this.escapeHtml(displayName)}:</span><span class="text">${processedText}</span>`;
+        messageElement.innerHTML = `<span class="username" style="color: ${userColor}">${badges}${this.escapeHtml(displayName)}:</span> <span class="text">${processedText}</span>`;
         
         messagesContainer.appendChild(messageElement);
         this.previewMessageCount++;
