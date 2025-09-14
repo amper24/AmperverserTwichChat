@@ -1633,7 +1633,7 @@ class TwitchChat {
         if (/^\x01ACTION.*\x01$/.test(text)) {
             const actionText = text.replace(/^\x01ACTION/, '').replace(/\x01$/, '').trim();
             const processedActionText = this.processEmotes(actionText, userData);
-            messageHtml = `<span class="username" style="color: ${userColor}">${badges}${this.escapeHtml(displayName)}</span> <span class="text" style="color: ${userColor}">${processedActionText}</span>`;
+            messageHtml = `<span class="username" style="color: ${userColor}">${badges}${this.escapeHtml(displayName)}</span><span class="text" style="color: ${userColor}">${processedActionText}</span>`;
         } else {
             messageHtml = `<span class="username" style="color: ${userColor}">${badges}${this.escapeHtml(displayName)}:</span><span class="text">${processedText}</span>`;
         }
