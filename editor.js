@@ -1951,6 +1951,14 @@ class ChatEditor {
         params.set('gradientColor1', this.settings.gradientColor1);
         params.set('gradientColor2', this.settings.gradientColor2);
         params.set('gradientDirection', this.settings.gradientDirection);
+        
+        // Отладочная информация
+        console.log('Generating URL with background gradient settings:', {
+            backgroundGradient: this.settings.backgroundGradient,
+            gradientColor1: this.settings.gradientColor1,
+            gradientColor2: this.settings.gradientColor2,
+            gradientDirection: this.settings.gradientDirection
+        });
         params.set('hideBackground', this.settings.hideBackground);
         
         // Настройки сообщений
@@ -2003,7 +2011,12 @@ class ChatEditor {
         params.set('chatHeight', this.settings.chatHeight);
         
         const paramString = params.toString();
-        return paramString ? `${baseURL}?${paramString}` : baseURL;
+        const finalURL = paramString ? `${baseURL}?${paramString}` : baseURL;
+        
+        // Отладочная информация
+        console.log('Generated chat URL:', finalURL);
+        
+        return finalURL;
     }
     
     updateOBSURL() {

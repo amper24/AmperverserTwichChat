@@ -957,6 +957,8 @@ img.emoji {
 .message {
     /* Fallback для браузеров без поддержки градиентов */
     background-color: var(--message-fallback-bg, #1a1a1a);
+    /* Убеждаемся, что градиенты применяются */
+    background-image: var(--message-gradient, none);
 }
 
 /* Поддержка conic градиентов для современных браузеров */
@@ -983,4 +985,13 @@ img.emoji {
     .message[style*="conic-gradient"] {
         background-attachment: scroll;
     }
+}
+
+/* Дополнительные стили для градиентов сообщений */
+.message[style*="linear-gradient"],
+.message[style*="radial-gradient"],
+.message[style*="conic-gradient"] {
+    background-attachment: scroll !important;
+    background-repeat: no-repeat !important;
+    background-size: cover !important;
 }
