@@ -11,14 +11,10 @@ class TwitchChat {
         this.twitchClientId = 'ixowm4lsi8n8c07c5q6o9wajawma2m'; // Ваш Client ID
         this.twitchOAuthToken = '3907ydvzaj8du83lv2fqvy6uk6151s'; // Ваш OAuth токен
         
-        // Массивы для эмодзи (7TV, BTTV, FFZ)
-        this.sevenTVGlobalEmotes = [];
-        this.sevenTVChannelEmotes = [];
+        // Массивы для эмодзи (BTTV)
         this.bttvGlobalEmotes = [];
         this.bttvChannelEmotes = [];
         this.bttvSharedEmotes = [];
-        this.ffzGlobalEmotes = [];
-        this.ffzChannelEmotes = [];
         
         // Настройки по умолчанию
         this.settings = {
@@ -847,178 +843,11 @@ class TwitchChat {
                 // Если канал не найден в BTTV, это нормально - не все каналы используют BTTV
             });
 
-        // FFZ Global emotes
-        fetch('https://api.betterttv.net/3/cached/frankerfacez/emotes/global')
-                .then(res => {
-                if (!res.ok) {
-                    throw new Error(`HTTP ${res.status}`);
-                }
-                return res.json();
-            })
-            .then(res => {
-                if (Array.isArray(res)) {
-                    res.forEach(emote => {
-                        if (emote.images && emote.images['4x']) {
-                            var imageUrl = emote.images['4x'];
-                            var upscale = false;
-                        } else if (emote.images) {
-                            var imageUrl = emote.images['2x'] || emote.images['1x'];
-                            var upscale = true;
-                        } else {
-                            return; // Пропускаем эмодзи без изображений
-                        }
-                        this.emotes[emote.code] = {
-                            id: emote.id,
-                            image: imageUrl,
-                            upscale: upscale
-                        };
-                    });
-                }
-                })
-            .catch(err => console.warn('FFZ global emotes error:', err.message));
 
-        // FFZ Channel emotes - используем прямой API FrankerFaceZ
-        fetch(`https://api.frankerfacez.com/v1/room/${channelID}`)
-                .then(res => {
-                if (!res.ok) {
-                    throw new Error(`HTTP ${res.status}`);
-                    }
-                return res.json();
-            })
-            .then(res => {
-                if (res.sets && res.sets[res.room.set]) {
-                    const emotes = res.sets[res.room.set].emoticons;
-                    if (Array.isArray(emotes)) {
-                        emotes.forEach(emote => {
-                            if (emote.urls && emote.urls['4']) {
-                                var imageUrl = emote.urls['4'];
-                                var upscale = false;
-                            } else if (emote.urls) {
-                                var imageUrl = emote.urls['2'] || emote.urls['1'];
-                                var upscale = true;
-                            } else {
-                                return; // Пропускаем эмодзи без изображений
-                            }
-                            this.emotes[emote.name] = {
-                                id: emote.id,
-                                image: imageUrl,
-                                upscale: upscale
-                            };
-                        });
-                    }
-                }
-                })
-            .catch(err => {
-                console.warn('FFZ channel emotes error:', err.message);
-                // Если канал не найден в FFZ, это нормально - не все каналы используют FFZ
-            });
 
-        // 7TV эмодзи - используем новый API v3
-        // Глобальные эмодзи 7TV
-        fetch('https://7tv.io/v3/emote-sets/global')
-            .then(res => {
-                if (!res.ok) {
-                    throw new Error(`HTTP ${res.status}`);
-                }
-                return res.json();
-            })
-            .then(res => {
-                if (res.emotes && Array.isArray(res.emotes)) {
-                    res.emotes.forEach(emote => {
-                        this.emotes[emote.name] = {
-                            id: emote.id,
-                            image: `https://cdn.7tv.app/emote/${emote.id}/4x.webp`,
-                            animated: emote.animated
-                        };
-                    });
-                }
-            })
-            .catch(err => {
-                console.warn('7TV global emotes error:', err.message);
-                // Fallback на старый API если новый не работает
-                return fetch('https://api.7tv.app/v2/emotes/global')
-                    .then(res => res.json())
-                    .then(res => {
-                        if (Array.isArray(res)) {
-                            res.forEach(emote => {
-                                if (emote.urls && emote.urls.length > 0) {
-                                    this.emotes[emote.name] = {
-                                        id: emote.id,
-                                        image: emote.urls[emote.urls.length - 1][1],
-                                        zeroWidth: emote.visibility_simple && emote.visibility_simple.includes("ZERO_WIDTH")
-                                    };
-                                }
-                            });
-                        }
-                    })
-                    .catch(err2 => console.warn('7TV fallback error:', err2.message));
-            });
 
-        // 7TV эмодзи канала
-        fetch(`https://7tv.io/v3/users/twitch/${channelID}`)
-            .then(res => {
-                if (!res.ok) {
-                    throw new Error(`HTTP ${res.status}`);
-                }
-                return res.json();
-            })
-            .then(res => {
-                if (res.emote_set && res.emote_set.emotes && Array.isArray(res.emote_set.emotes)) {
-                    res.emote_set.emotes.forEach(emote => {
-                        this.emotes[emote.name] = {
-                            id: emote.id,
-                            image: `https://cdn.7tv.app/emote/${emote.id}/4x.webp`,
-                            animated: emote.animated
-                        };
-                    });
-                }
-            })
-            .catch(err => {
-                console.warn('7TV channel emotes error:', err.message);
-                // Fallback на старый API если новый не работает
-                return fetch(`https://api.7tv.app/v2/users/${encodeURIComponent(channelID)}/emotes`)
-                    .then(res => res.json())
-                    .then(res => {
-                        if (Array.isArray(res)) {
-                            res.forEach(emote => {
-                                if (emote.urls && emote.urls.length > 0) {
-                                    this.emotes[emote.name] = {
-                                        id: emote.id,
-                                        image: emote.urls[emote.urls.length - 1][1],
-                                        zeroWidth: emote.visibility_simple && emote.visibility_simple.includes("ZERO_WIDTH")
-                                    };
-                                }
-                            });
-                        }
-                    })
-                    .catch(err2 => console.warn('7TV channel fallback error:', err2.message));
-            });
     }
     
-    // Загружаем эмодзи из 7TV
-    async load7TVEmotes() {
-        try {
-            // Загружаем глобальные эмодзи 7TV - используем правильные эндпоинты как в jChat
-            const globalResponse = await fetch('https://api.7tv.app/v2/emotes/global');
-            if (globalResponse.ok) {
-                const globalData = await globalResponse.json();
-                this.sevenTVGlobalEmotes = globalData || [];
-                console.log('7TV Global emotes loaded:', this.sevenTVGlobalEmotes.length);
-            }
-            
-            // Загружаем эмодзи канала 7TV
-            const channelResponse = await fetch(`https://api.7tv.app/v2/users/${this.channel}/emotes`);
-            if (channelResponse.ok) {
-                const channelData = await channelResponse.json();
-                this.sevenTVChannelEmotes = channelData || [];
-                console.log('7TV Channel emotes loaded:', this.sevenTVChannelEmotes.length);
-            }
-        } catch (error) {
-            console.error('Failed to load 7TV emotes:', error);
-            this.sevenTVGlobalEmotes = [];
-            this.sevenTVChannelEmotes = [];
-        }
-    }
     
     // Загружаем эмодзи из BTTV
     async loadBTTVEmotes() {
@@ -1045,28 +874,6 @@ class TwitchChat {
         }
     }
     
-    // Загружаем эмодзи из FFZ
-    async loadFFZEmotes() {
-        try {
-            // Загружаем глобальные эмодзи FFZ
-            const globalResponse = await fetch('https://api.frankerfacez.com/v1/set/global');
-            if (globalResponse.ok) {
-                const globalData = await globalResponse.json();
-                this.ffzGlobalEmotes = globalData.sets?.global?.emoticons || [];
-                console.log('FFZ Global emotes loaded:', this.ffzGlobalEmotes.length);
-            }
-            
-            // Загружаем эмодзи канала FFZ
-            const channelResponse = await fetch(`https://api.frankerfacez.com/v1/room/${this.channel}`);
-            if (channelResponse.ok) {
-                const channelData = await channelResponse.json();
-                this.ffzChannelEmotes = channelData.sets?.[Object.keys(channelData.sets)[0]]?.emoticons || [];
-                console.log('FFZ Channel emotes loaded:', this.ffzChannelEmotes.length);
-            }
-        } catch (error) {
-            console.error('Failed to load FFZ emotes:', error);
-        }
-    }
     
     async connectViaAPI() {
         try {
@@ -1865,7 +1672,7 @@ class TwitchChat {
             });
         }
         
-        // Добавляем пользовательские бейджи (FFZ, BTTV, 7TV, Chatterino)
+        // Добавляем пользовательские бейджи (BTTV, Chatterino)
         if (this.userBadges && this.userBadges[username]) {
             this.userBadges[username].forEach(badge => {
                 let badgeHtml = `<img class="badge" src="${badge.url}" alt="${badge.description}" title="${badge.description}"`;
@@ -1894,51 +1701,12 @@ class TwitchChat {
         return null;
     }
     
-    // Загружаем пользовательские бейджи (FFZ, BTTV, 7TV, Chatterino)
+    // Загружаем пользовательские бейджи (BTTV, Chatterino)
     loadUserBadges(nick, userId) {
         if (!this.userBadges) this.userBadges = {};
         this.userBadges[nick] = [];
         
-        // FFZ бейджи
-        fetch('https://api.frankerfacez.com/v1/user/' + nick)
-            .then(res => res.json())
-            .then(res => {
-                if (res.badges) {
-                    Object.entries(res.badges).forEach(badge => {
-                        const userBadge = {
-                            description: badge[1].title,
-                            url: 'https:' + badge[1].urls['4'],
-                            color: badge[1].color
-                        };
-                        if (!this.userBadges[nick].includes(userBadge)) {
-                            this.userBadges[nick].push(userBadge);
-                        }
-                    });
-                }
-            })
-            .catch(err => console.error('FFZ badges error:', err));
         
-        // FFZ:AP бейджи
-        if (this.ffzapBadges) {
-            this.ffzapBadges.forEach(user => {
-                if (user.id.toString() === userId) {
-                    let color = '#755000';
-                    if (user.tier == 2) color = (user.badge_color || '#755000');
-                    else if (user.tier == 3) {
-                        if (user.badge_is_colored == 0) color = (user.badge_color || '#755000');
-                        else color = false;
-                    }
-                    const userBadge = {
-                        description: 'FFZ:AP Badge',
-                        url: 'https://api.ffzap.com/v1/user/badge/' + userId + '/3',
-                        color: color
-                    };
-                    if (!this.userBadges[nick].includes(userBadge)) {
-                        this.userBadges[nick].push(userBadge);
-                    }
-                }
-            });
-        }
         
         // BTTV бейджи
         if (this.bttvBadges) {
@@ -1955,22 +1723,6 @@ class TwitchChat {
             });
         }
         
-        // 7TV бейджи
-        if (this.seventvBadges) {
-            this.seventvBadges.forEach(badge => {
-                badge.users.forEach(user => {
-                    if (user === nick) {
-                        const userBadge = {
-                            description: badge.tooltip,
-                            url: badge.urls[2][1]
-                        };
-                        if (!this.userBadges[nick].includes(userBadge)) {
-                            this.userBadges[nick].push(userBadge);
-                        }
-                    }
-                });
-            });
-        }
         
         // Chatterino бейджи
         if (this.chatterinoBadges) {
@@ -2088,7 +1840,7 @@ class TwitchChat {
             });
         }
         
-        // Обработка BTTV, FFZ, 7TV эмодзи
+        // Обработка BTTV эмодзи
         if (this.emotes) {
         Object.entries(this.emotes).forEach(emote => {
                 if (message.search(this.escapeRegExp(emote[0])) > -1) {
@@ -2154,17 +1906,6 @@ class TwitchChat {
     createEmoteMap() {
         const emoteMap = new Map();
         
-        // Добавляем 7TV эмодзи
-        [...this.sevenTVGlobalEmotes, ...this.sevenTVChannelEmotes].forEach(emote => {
-            if (emote && emote.name) {
-                emoteMap.set(emote.name, {
-                    type: '7tv',
-                    id: emote.id,
-                    name: emote.name,
-                    url: `https://cdn.7tv.app/emote/${emote.id}/1x.webp`
-                });
-            }
-        });
         
         // Добавляем BTTV эмодзи
         [...this.bttvGlobalEmotes, ...this.bttvChannelEmotes, ...this.bttvSharedEmotes].forEach(emote => {
@@ -2178,17 +1919,6 @@ class TwitchChat {
             }
         });
         
-        // Добавляем FFZ эмодзи
-        [...this.ffzGlobalEmotes, ...this.ffzChannelEmotes].forEach(emote => {
-            if (emote && emote.name && emote.urls && emote.urls['1']) {
-                emoteMap.set(emote.name, {
-                    type: 'ffz',
-                    id: emote.id,
-                    name: emote.name,
-                    url: `https:${emote.urls['1']}`
-                });
-            }
-        });
         
         return emoteMap;
     }
@@ -2220,13 +1950,9 @@ class TwitchChat {
     // Тестируем загрузку эмодзи
     testEmotes() {
         console.log('Testing emotes...');
-        console.log('7TV Global:', this.sevenTVGlobalEmotes.length);
-        console.log('7TV Channel:', this.sevenTVChannelEmotes.length);
         console.log('BTTV Global:', this.bttvGlobalEmotes.length);
         console.log('BTTV Channel:', this.bttvChannelEmotes.length);
         console.log('BTTV Shared:', this.bttvSharedEmotes.length);
-        console.log('FFZ Global:', this.ffzGlobalEmotes.length);
-        console.log('FFZ Channel:', this.ffzChannelEmotes.length);
         
         // Тестируем обработку эмодзи
         const testText = 'Hello PogChamp Kappa monkaS 5Head OMEGALUL';
@@ -3008,22 +2734,6 @@ class TwitchChat {
         // Затем пытаемся загрузить актуальные глобальные бейджи Twitch
         this.loadTwitchGlobalBadges();
         
-        // FFZ:AP бейджи - как в jChat
-        fetch('https://api.ffzap.com/v1/supporters')
-            .then(res => {
-                if (!res.ok) {
-                    throw new Error(`HTTP ${res.status}`);
-                }
-                return res.json();
-            })
-            .then(res => {
-                this.ffzapBadges = res || [];
-                console.log('FFZ:AP badges loaded:', this.ffzapBadges.length);
-            })
-            .catch(err => {
-                console.warn('FFZ:AP badges error:', err.message);
-                this.ffzapBadges = [];
-            });
         
         // BTTV бейджи - как в jChat
         fetch('https://api.betterttv.net/3/cached/badges')
@@ -3042,32 +2752,6 @@ class TwitchChat {
                 this.bttvBadges = [];
             });
         
-        // 7TV бейджи - используем новый API v3
-        fetch('https://7tv.io/v3/badges')
-            .then(res => {
-                if (!res.ok) {
-                    throw new Error(`HTTP ${res.status}`);
-                }
-                return res.json();
-            })
-            .then(res => {
-                this.seventvBadges = res || [];
-                console.log('7TV badges loaded:', this.seventvBadges.length);
-            })
-            .catch(err => {
-                console.warn('7TV badges error:', err.message);
-                // Fallback на старый API
-                return fetch('https://api.7tv.app/v2/badges?user_identifier=login')
-                    .then(res => res.json())
-                    .then(res => {
-                        this.seventvBadges = res.badges || [];
-                        console.log('7TV badges loaded (fallback):', this.seventvBadges.length);
-                    })
-                    .catch(err2 => {
-                        console.warn('7TV badges fallback error:', err2.message);
-                        this.seventvBadges = [];
-                    });
-            });
         
         // Chatterino бейджи - как в jChat
         fetch('https://api.chatterino.com/badges')
@@ -3278,29 +2962,6 @@ class TwitchChat {
             'bits:1000000': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/1000000'
         };
         
-        // Пробуем загрузить FFZ модераторские бейджи
-        fetch(`https://api.frankerfacez.com/v1/room/${channelId}`)
-            .then(res => {
-                if (!res.ok) {
-                    throw new Error(`HTTP ${res.status}`);
-                }
-                return res.json();
-            })
-            .then(res => {
-                if (res.room) {
-                    if (res.room.moderator_badge) {
-                        this.badges['moderator:1'] = `https://cdn.frankerfacez.com/room-badge/mod/${this.channel}/4/rounded`;
-                    }
-                    if (res.room.vip_badge) {
-                        this.badges['vip:1'] = `https://cdn.frankerfacez.com/room-badge/vip/${this.channel}/4`;
-                    }
-                }
-                console.log('FFZ badges loaded for channel:', this.channel);
-            })
-            .catch(err => {
-                console.warn('FFZ badges loading error:', err.message);
-                // Это нормально, не все каналы используют FFZ
-            });
     }
     
     disconnect() {
