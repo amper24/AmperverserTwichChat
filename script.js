@@ -8,7 +8,8 @@ class TwitchChat {
         
         // Кэш для бейджей
         this.badgeCache = new Map();
-        this.twitchClientId = 'kimne78kx3ncx6brgo4mv6wki5h1ko'; // Публичный Client ID
+        this.twitchClientId = 'ixowm4lsi8n8c07c5q6o9wajawma2m'; // Ваш Client ID
+        this.twitchOAuthToken = '3907ydvzaj8du83lv2fqvy6uk6151s'; // Ваш OAuth токен
         
         // Массивы для эмодзи (7TV, BTTV, FFZ)
         this.sevenTVGlobalEmotes = [];
@@ -2556,11 +2557,24 @@ class TwitchChat {
         console.log('🌐 Загружаем ВСЕ глобальные бейджи Twitch через API...');
         console.log('🔑 Client-ID:', this.twitchClientId);
         
+        const headers = {
+            'Client-ID': this.twitchClientId,
+            'Accept': 'application/vnd.twitchtv.v5+json'
+        };
+        
+        // Добавляем OAuth токен, если он есть
+        if (this.twitchOAuthToken) {
+            headers['Authorization'] = `Bearer ${this.twitchOAuthToken}`;
+            console.log('🔐 Используем OAuth токен для авторизации');
+        } else {
+            console.log('⚠️ OAuth токен не установлен, используем только Client ID');
+            console.log('💡 Для получения OAuth токена перейдите по ссылке:');
+            console.log('   https://id.twitch.tv/oauth2/authorize?client_id=ixowm4lsi8n8c07c5q6o9wajawma2m&redirect_uri=https://amper24.github.io/AmperverserTwichChat/&response_type=token&scope=chat:read');
+            console.log('   Затем добавьте токен в код: this.twitchOAuthToken = "ваш_токен"');
+        }
+        
         fetch('https://api.twitch.tv/helix/chat/badges/global', {
-            headers: {
-                'Client-ID': this.twitchClientId,
-                'Accept': 'application/vnd.twitchtv.v5+json'
-            }
+            headers: headers
         })
         .then(res => {
             console.log('📡 Ответ от API:', res.status, res.statusText);
