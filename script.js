@@ -1635,7 +1635,7 @@ class TwitchChat {
             const processedActionText = this.processEmotes(actionText, userData);
             messageHtml = `<span class="username" style="color: ${userColor}">${badges}${this.escapeHtml(displayName)}</span><span class="text" style="color: ${userColor}">${processedActionText}</span>`;
         } else {
-            messageHtml = `<span class="username" style="color: ${userColor}">${badges}${this.escapeHtml(displayName)}:</span><span class="text">${processedText}</span>`;
+            messageHtml = `<span class="username" style="color: ${userColor}">${badges}${this.escapeHtml(displayName)}:</span> <span class="text">${processedText}</span>`;
         }
         
         messageElement.innerHTML = messageHtml;

@@ -571,7 +571,6 @@ body {
 .message .text {
     color: inherit;
     line-height: 1.2;
-    margin-left: 0.1em;
 }
 
 /* Настройки выравнивания сообщений */
