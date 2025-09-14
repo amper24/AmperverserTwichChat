@@ -505,7 +505,7 @@ body {
 .message .username {
     color: #9146ff;
     font-weight: bold;
-    margin-right: 0.1em;
+    margin-right: 0 !important;
     display: inline-flex;
     align-items: baseline;
     gap: 1px;
@@ -514,7 +514,7 @@ body {
 .badge {
     width: 1em;
     height: 1em;
-    margin-right: 0.05em;
+    margin-right: 0 !important;
     display: inline-block;
     vertical-align: baseline;
     object-fit: contain;
@@ -571,6 +571,7 @@ body {
 .message .text {
     color: inherit;
     line-height: 1.2;
+    margin-left: 0.1em;
 }
 
 /* Настройки выравнивания сообщений */
@@ -871,7 +872,7 @@ img.emoji {
     border-radius: 10%;
     width: 1em;
     height: 1em;
-    margin-right: 0.05em;
+    margin-right: 0 !important;
 }
 
 .emote {
