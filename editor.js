@@ -2455,12 +2455,43 @@ class ChatEditor {
             'Audiowide', 'Electrolize', 'Michroma', 'Russo One', 'Press Start 2P',
             'VT323', 'Share Tech Mono', 'Nova Mono', 'Rationale', 'Aldrich',
             'Rajdhani', 'Syncopate',
-            // Новые креативные шрифты
+            // Minecraft шрифты
+            'Minecraft', 'Minecraft TEN', 'Minecraft RUS', 'Minecraft Bold',
+            'Minecraft Italic', 'Minecraft Bold Italic', 'Minecraft Regular',
+            'Minecraft Even', 'Minecraft Odd', 'Minecraft Unicode',
+            // Дополнительные игровые шрифты
+            'Orbitron', 'Exo', 'Exo 2', 'Titillium Web', 'Raleway Dots',
+            'Monoton', 'Bungee', 'Bungee Shade', 'Bungee Inline', 'Bungee Hairline',
+            'Bungee Outline', 'Bungee Spice', 'Butcherman', 'Butcherman Caps',
+            'Butcherman Condensed', 'Butcherman Inline', 'Butcherman Outline',
+            'Butcherman Spice', 'Butcherman Hairline', 'Butcherman Shade',
+            'Creepster', 'Fascinate', 'Nosifer', 'Griffy', 'Eater',
+            'Faster One', 'Faster One', 'Faster One', 'Faster One',
+            // Пиксельные и ретро шрифты
+            'Pixel', 'Pixelated', '8bit', '8-bit', 'Retro', 'Arcade',
+            'Digital', 'LCD', 'LED', 'Matrix', 'Terminal', 'Console',
+            'Monospace', 'Courier New', 'Courier', 'Lucida Console',
+            'Monaco', 'Menlo', 'Consolas', 'DejaVu Sans Mono',
+            // Русские и кириллические шрифты
+            'Roboto Slab', 'PT Sans Caption', 'PT Sans Narrow', 'PT Serif Caption',
+            'PT Mono', 'PT Sans', 'PT Serif', 'Open Sans Condensed',
+            'Open Sans', 'Roboto Condensed', 'Roboto Slab', 'Roboto',
+            'Lato', 'Source Sans Pro', 'Source Serif Pro', 'Source Code Pro',
+            'Fira Sans', 'Fira Sans Condensed', 'Fira Sans Extra Condensed',
+            'Fira Code', 'Fira Mono', 'Fira Sans', 'Fira Sans Condensed',
+            'Fira Sans Extra Condensed', 'Fira Code', 'Fira Mono',
+            // Дополнительные декоративные шрифты
             'Permanent Marker', 'Shadows Into Light', 'Indie Flower', 'Comfortaa',
             'Chewy', 'Bungee', 'Bungee Shade', 'Bungee Inline', 'Bungee Hairline',
             'Bungee Outline', 'Bungee Spice', 'Butcherman', 'Butcherman Caps',
             'Butcherman Condensed', 'Butcherman Inline', 'Butcherman Outline',
-            'Butcherman Spice', 'Butcherman Hairline', 'Butcherman Shade'
+            'Butcherman Spice', 'Butcherman Hairline', 'Butcherman Shade',
+            'Satisfy', 'Kalam', 'Caveat', 'Amatic SC', 'Bangers', 'Creepster',
+            'Fascinate', 'Orbitron', 'Fira Code', 'Source Code Pro', 'JetBrains Mono',
+            'Roboto Mono', 'Ubuntu Mono', 'PT Mono', 'Droid Sans Mono', 'Noto Sans Mono',
+            'Space Mono', 'Inconsolata', 'Anonymous Pro', 'Cousine', 'Cutive Mono',
+            'IBM Plex Mono', 'Liberation Mono', 'Major Mono Display', 'Maven Pro', 'Muli',
+            'Overpass Mono', 'Oxygen Mono'
         ];
         
         if (googleFonts.includes(fontName)) {

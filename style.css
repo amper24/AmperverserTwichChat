@@ -1010,3 +1010,84 @@ img.emoji {
 .chat-container {
     background-image: var(--gradient-image, none) !important;
 }
+
+/* Шрифты Minecraft */
+@font-face {
+    font-family: 'Minecraft';
+    src: url('https://fonts.gstatic.com/s/minecraft/v1/1.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Minecraft TEN';
+    src: url('https://fonts.gstatic.com/s/minecraft/v1/1.woff2') format('woff2');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Minecraft RUS';
+    src: url('https://fonts.gstatic.com/s/minecraft/v1/1.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Minecraft Bold';
+    src: url('https://fonts.gstatic.com/s/minecraft/v1/1.woff2') format('woff2');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Minecraft Italic';
+    src: url('https://fonts.gstatic.com/s/minecraft/v1/1.woff2') format('woff2');
+    font-weight: normal;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Minecraft Bold Italic';
+    src: url('https://fonts.gstatic.com/s/minecraft/v1/1.woff2') format('woff2');
+    font-weight: bold;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Minecraft Regular';
+    src: url('https://fonts.gstatic.com/s/minecraft/v1/1.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Minecraft Even';
+    src: url('https://fonts.gstatic.com/s/minecraft/v1/1.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Minecraft Odd';
+    src: url('https://fonts.gstatic.com/s/minecraft/v1/1.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Minecraft Unicode';
+    src: url('https://fonts.gstatic.com/s/minecraft/v1/1.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
