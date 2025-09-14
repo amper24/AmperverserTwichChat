@@ -245,6 +245,7 @@ class TwitchChat {
     async loadSettings() {
         // Загружаем настройки из URL параметров
         const urlParams = new URLSearchParams(window.location.search);
+        console.log('URL parameters:', Object.fromEntries(urlParams.entries()));
         
         // Применяем настройки из URL
         if (urlParams.get('borderWidth')) this.settings.borderWidth = parseInt(urlParams.get('borderWidth'));
@@ -313,7 +314,7 @@ class TwitchChat {
         }
         
         // Настройки шрифтов
-        if (urlParams.get('fontFamily')) this.settings.fontFamily = urlParams.get('fontFamily');
+        if (urlParams.get('fontFamily')) this.settings.fontFamily = decodeURIComponent(urlParams.get('fontFamily'));
         if (urlParams.get('fontSize')) this.settings.fontSize = parseInt(urlParams.get('fontSize'));
         if (urlParams.get('fontWeight')) this.settings.fontWeight = parseInt(urlParams.get('fontWeight'));
         if (urlParams.get('lineHeight')) this.settings.lineHeight = parseFloat(urlParams.get('lineHeight'));
@@ -360,6 +361,11 @@ class TwitchChat {
         this.chatContainer.style.borderRadius = this.settings.borderRadius + 'px';
         
         // Применяем свечение
+        console.log('Glow settings:', {
+            enableGlow: this.settings.enableGlow,
+            glowColor: this.settings.glowColor,
+            glowIntensity: this.settings.glowIntensity
+        });
         if (this.settings.enableGlow) {
             const glowColor = this.settings.glowColor;
             const intensity = this.settings.glowIntensity;
@@ -477,6 +483,14 @@ class TwitchChat {
         
         
         // Применяем настройки шрифтов
+        console.log('Font settings:', {
+            fontFamily: this.settings.fontFamily,
+            fontSize: this.settings.fontSize,
+            fontWeight: this.settings.fontWeight,
+            lineHeight: this.settings.lineHeight,
+            letterSpacing: this.settings.letterSpacing,
+            fontColor: this.settings.fontColor
+        });
         this.chatMessagesElement.style.fontFamily = this.settings.fontFamily;
         this.chatMessagesElement.style.fontSize = this.settings.fontSize + 'px';
         this.chatMessagesElement.style.fontWeight = this.settings.fontWeight;
