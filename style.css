@@ -505,16 +505,16 @@ body {
 .message .username {
     color: #9146ff;
     font-weight: bold;
-    margin-right: 2px;
+    margin-right: 0.2em;
     display: inline-flex;
     align-items: baseline;
-    gap: 2px;
+    gap: 1px;
 }
 
 .badge {
     width: 1em;
     height: 1em;
-    margin-right: 0.2em;
+    margin-right: 0.1em;
     display: inline-block;
     vertical-align: baseline;
     object-fit: contain;
@@ -871,7 +871,7 @@ img.emoji {
     border-radius: 10%;
     width: 1em;
     height: 1em;
-    margin-right: 0.2em;
+    margin-right: 0.1em;
 }
 
 .emote {
