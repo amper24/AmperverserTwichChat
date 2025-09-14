@@ -2453,40 +2453,114 @@ class TwitchChat {
         return this.channel;
     }
     
-    // Загрузка глобальных бейджей Twitch
+    // Загрузка глобальных бейджей Twitch согласно официальной документации
     loadTwitchGlobalBadges() {
         fetch('https://api.twitch.tv/helix/chat/badges/global', {
             headers: {
-                'Client-ID': this.twitchClientId
+                'Client-ID': this.twitchClientId,
+                'Accept': 'application/vnd.twitchtv.v5+json'
             }
         })
         .then(res => {
             if (!res.ok) {
-                throw new Error(`HTTP ${res.status}`);
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
             }
             return res.json();
         })
         .then(data => {
             console.log('Twitch global badges loaded:', data.data?.length || 0);
             
-            // Сохраняем глобальные бейджи в кэш
+            // Сохраняем глобальные бейджи в кэш согласно структуре API
             if (!this.badgeCache.has('global')) {
                 this.badgeCache.set('global', { global: {}, channel: {} });
             }
             
             const globalBadges = {};
-            if (data.data) {
+            if (data.data && Array.isArray(data.data)) {
                 data.data.forEach(badge => {
-                    globalBadges[badge.set_id] = badge;
+                    // Согласно документации, каждый бейдж имеет set_id и versions
+                    if (badge.set_id && badge.versions) {
+                        globalBadges[badge.set_id] = {
+                            set_id: badge.set_id,
+                            versions: badge.versions
+                        };
+                    }
                 });
             }
             
             this.badgeCache.get('global').global = globalBadges;
             console.log('Global badges cached:', Object.keys(globalBadges));
+            
+            // Логируем детали для отладки
+            Object.keys(globalBadges).forEach(badgeId => {
+                const versions = Object.keys(globalBadges[badgeId].versions);
+                console.log(`Global badge ${badgeId}: ${versions.length} versions`);
+            });
         })
         .catch(err => {
             console.warn('Twitch global badges error:', err.message);
+            // В случае ошибки, используем fallback бейджи
+            this.loadFallbackGlobalBadges();
         });
+    }
+    
+    // Fallback глобальные бейджи на случай ошибки API
+    loadFallbackGlobalBadges() {
+        console.log('Loading fallback global badges');
+        if (!this.badgeCache.has('global')) {
+            this.badgeCache.set('global', { global: {}, channel: {} });
+        }
+        
+        // Базовые глобальные бейджи Twitch
+        const fallbackGlobalBadges = {
+            'admin': {
+                set_id: 'admin',
+                versions: {
+                    '1': {
+                        id: '1',
+                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/9ef7e029-4cdf-4d4d-a0d5-e2b3fb2583fe/1',
+                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/9ef7e029-4cdf-4d4d-a0d5-e2b3fb2583fe/2',
+                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/9ef7e029-4cdf-4d4d-a0d5-e2b3fb2583fe/3'
+                    }
+                }
+            },
+            'global_mod': {
+                set_id: 'global_mod',
+                versions: {
+                    '1': {
+                        id: '1',
+                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/9388c43e-4ce7-4e94-b2a1-b936d6e4824a/1',
+                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/9388c43e-4ce7-4e94-b2a1-b936d6e4824a/2',
+                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/9388c43e-4ce7-4e94-b2a1-b936d6e4824a/3'
+                    }
+                }
+            },
+            'staff': {
+                set_id: 'staff',
+                versions: {
+                    '1': {
+                        id: '1',
+                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/d97c37bd-a6f5-4c38-8d57-2856b5b7a1c2/1',
+                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/d97c37bd-a6f5-4c38-8d57-2856b5b7a1c2/2',
+                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/d97c37bd-a6f5-4c38-8d57-2856b5b7a1c2/3'
+                    }
+                }
+            },
+            'twitchbot': {
+                set_id: 'twitchbot',
+                versions: {
+                    '1': {
+                        id: '1',
+                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/df09a657-6074-41a7-a59c-70c930a2c002/1',
+                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/df09a657-6074-41a7-a59c-70c930a2c002/2',
+                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/df09a657-6074-41a7-a59c-70c930a2c002/3'
+                    }
+                }
+            }
+        };
+        
+        this.badgeCache.get('global').global = fallbackGlobalBadges;
+        console.log('Fallback global badges loaded:', Object.keys(fallbackGlobalBadges));
     }
     
     // Загрузка дополнительных бейджей - используем API как в jChat
@@ -2573,7 +2647,7 @@ class TwitchChat {
             });
     }
     
-    // Загрузка бейджей канала Twitch
+    // Загрузка бейджей канала Twitch согласно официальной документации
     loadTwitchChannelBadges(channelId) {
         if (!channelId || channelId === 'global') {
             console.log('No channel ID for badges, skipping channel badges');
@@ -2582,36 +2656,134 @@ class TwitchChat {
         
         fetch(`https://api.twitch.tv/helix/chat/badges?broadcaster_id=${channelId}`, {
             headers: {
-                'Client-ID': this.twitchClientId
+                'Client-ID': this.twitchClientId,
+                'Accept': 'application/vnd.twitchtv.v5+json'
             }
         })
         .then(res => {
             if (!res.ok) {
-                throw new Error(`HTTP ${res.status}`);
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
             }
             return res.json();
         })
         .then(data => {
             console.log('Twitch channel badges loaded:', data.data?.length || 0);
             
-            // Сохраняем бейджи канала в кэш
+            // Сохраняем бейджи канала в кэш согласно структуре API
             if (!this.badgeCache.has(channelId)) {
                 this.badgeCache.set(channelId, { global: {}, channel: {} });
             }
             
             const channelBadges = {};
-            if (data.data) {
+            if (data.data && Array.isArray(data.data)) {
                 data.data.forEach(badge => {
-                    channelBadges[badge.set_id] = badge;
+                    // Согласно документации, каждый бейдж имеет set_id и versions
+                    if (badge.set_id && badge.versions) {
+                        channelBadges[badge.set_id] = {
+                            set_id: badge.set_id,
+                            versions: badge.versions
+                        };
+                    }
                 });
             }
             
             this.badgeCache.get(channelId).channel = channelBadges;
             console.log('Channel badges cached:', Object.keys(channelBadges));
+            
+            // Логируем детали для отладки
+            Object.keys(channelBadges).forEach(badgeId => {
+                const versions = Object.keys(channelBadges[badgeId].versions);
+                console.log(`Channel badge ${badgeId}: ${versions.length} versions`);
+            });
         })
         .catch(err => {
             console.warn('Twitch channel badges error:', err.message);
+            // В случае ошибки, используем fallback бейджи канала
+            this.loadFallbackChannelBadges(channelId);
         });
+    }
+    
+    // Fallback бейджи канала на случай ошибки API
+    loadFallbackChannelBadges(channelId) {
+        console.log('Loading fallback channel badges for:', channelId);
+        if (!this.badgeCache.has(channelId)) {
+            this.badgeCache.set(channelId, { global: {}, channel: {} });
+        }
+        
+        // Базовые бейджи канала Twitch
+        const fallbackChannelBadges = {
+            'broadcaster': {
+                set_id: 'broadcaster',
+                versions: {
+                    '1': {
+                        id: '1',
+                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1',
+                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/2',
+                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/3'
+                    }
+                }
+            },
+            'moderator': {
+                set_id: 'moderator',
+                versions: {
+                    '1': {
+                        id: '1',
+                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1',
+                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/2',
+                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/3'
+                    }
+                }
+            },
+            'vip': {
+                set_id: 'vip',
+                versions: {
+                    '1': {
+                        id: '1',
+                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1',
+                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/2',
+                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/3'
+                    }
+                }
+            },
+            'subscriber': {
+                set_id: 'subscriber',
+                versions: {
+                    '0': {
+                        id: '0',
+                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/1',
+                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/2',
+                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3'
+                    },
+                    '3': {
+                        id: '3',
+                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/1',
+                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/2',
+                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3'
+                    },
+                    '6': {
+                        id: '6',
+                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/1',
+                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/2',
+                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3'
+                    },
+                    '12': {
+                        id: '12',
+                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/1',
+                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/2',
+                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3'
+                    },
+                    '24': {
+                        id: '24',
+                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/1',
+                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/2',
+                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3'
+                    }
+                }
+            }
+        };
+        
+        this.badgeCache.get(channelId).channel = fallbackChannelBadges;
+        console.log('Fallback channel badges loaded:', Object.keys(fallbackChannelBadges));
     }
     
     // Загрузка бейджей Twitch через API - как в jChat
