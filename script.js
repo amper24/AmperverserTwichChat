@@ -692,11 +692,30 @@ class TwitchChat {
                 // Загружаем дополнительные бейджи
                 this.loadAdditionalBadges();
                 
+                // Принудительно загружаем глобальные бейджи
+                console.log('🚀 Принудительно загружаем глобальные бейджи...');
+                this.loadTwitchGlobalBadges();
+                
                 console.log('All data loaded for channel:', this.channel);
             });
         } catch (error) {
             console.error('Failed to load channel data:', error);
         }
+        
+        // Тестируем API глобальных бейджей
+        this.testGlobalBadgesAPI();
+        
+        // Принудительно создаем тестовое сообщение через 5 секунд
+        setTimeout(() => {
+            console.log('⏰ Принудительно создаем тестовое сообщение с глобальными бейджами...');
+            this.createTestMessageWithGlobalBadges();
+        }, 5000);
+        
+        // Проверяем состояние кэша через 3 секунды
+        setTimeout(() => {
+            console.log('🔍 Проверяем состояние кэша бейджей...');
+            this.checkBadgeCache();
+        }, 3000);
         
         // Сначала пробуем подключиться через IRC
         this.connectViaIRC();
@@ -2480,9 +2499,62 @@ class TwitchChat {
         return this.channel;
     }
     
+    // Проверка состояния кэша бейджей
+    checkBadgeCache() {
+        console.log('🔍 Состояние кэша бейджей:');
+        console.log('📋 Размер кэша:', this.badgeCache.size);
+        
+        for (let [key, value] of this.badgeCache) {
+            console.log(`📂 Кэш "${key}":`, {
+                global: Object.keys(value.global || {}).length,
+                channel: Object.keys(value.channel || {}).length
+            });
+            
+            if (value.global && Object.keys(value.global).length > 0) {
+                console.log(`🌐 Глобальные бейджи в "${key}":`, Object.keys(value.global));
+            }
+        }
+        
+        // Проверяем конкретные бейджи
+        const testBadges = ['admin', 'global_mod', 'staff', 'twitchbot'];
+        testBadges.forEach(badgeType => {
+            const url = this.getBadgeUrl(badgeType, '1');
+            console.log(`🧪 Тест бейджа ${badgeType}:`, url ? '✅ Работает' : '❌ Не работает');
+        });
+    }
+    
+    // Тестирование API глобальных бейджей
+    testGlobalBadgesAPI() {
+        console.log('🧪 Тестируем API глобальных бейджей...');
+        
+        // Простой тест fetch
+        fetch('https://api.twitch.tv/helix/chat/badges/global', {
+            headers: {
+                'Client-ID': this.twitchClientId,
+                'Accept': 'application/vnd.twitchtv.v5+json'
+            }
+        })
+        .then(res => {
+            console.log('🧪 Тест API - статус:', res.status, res.statusText);
+            if (res.ok) {
+                return res.json();
+            } else {
+                throw new Error(`API тест не прошел: ${res.status} ${res.statusText}`);
+            }
+        })
+        .then(data => {
+            console.log('🧪 Тест API - данные получены:', data);
+            console.log('🧪 Тест API - количество бейджей:', data.data?.length || 0);
+        })
+        .catch(err => {
+            console.error('🧪 Тест API - ошибка:', err);
+        });
+    }
+    
     // Загрузка ВСЕХ глобальных бейджей Twitch через API
     loadTwitchGlobalBadges() {
         console.log('🌐 Загружаем ВСЕ глобальные бейджи Twitch через API...');
+        console.log('🔑 Client-ID:', this.twitchClientId);
         
         fetch('https://api.twitch.tv/helix/chat/badges/global', {
             headers: {
@@ -2491,6 +2563,7 @@ class TwitchChat {
             }
         })
         .then(res => {
+            console.log('📡 Ответ от API:', res.status, res.statusText);
             if (!res.ok) {
                 throw new Error(`HTTP ${res.status}: ${res.statusText}`);
             }
@@ -2498,6 +2571,7 @@ class TwitchChat {
         })
         .then(data => {
             console.log('✅ Twitch глобальные бейджи загружены:', data.data?.length || 0);
+            console.log('📋 Полные данные API:', data);
             
             // Сохраняем глобальные бейджи в кэш согласно структуре API
             if (!this.badgeCache.has('global')) {
@@ -2530,7 +2604,12 @@ class TwitchChat {
             this.createTestMessageWithGlobalBadges();
         })
         .catch(err => {
-            console.warn('❌ Ошибка загрузки глобальных бейджей Twitch:', err.message);
+            console.error('❌ Ошибка загрузки глобальных бейджей Twitch:', err);
+            console.error('🔍 Детали ошибки:', {
+                message: err.message,
+                stack: err.stack,
+                name: err.name
+            });
             // В случае ошибки, используем fallback бейджи
             this.loadFallbackGlobalBadges();
         });
