@@ -14,6 +14,7 @@ class ChatEditor {
             baseURL: 'https://amper24.github.io/AmperverserTwichChat/',
             borderWidth: 3,
             borderColor: '#9146ff',
+            borderOpacity: 100,
             borderRadius: 10,
             hideBorder: false,
             enableGlow: false,
@@ -103,6 +104,9 @@ class ChatEditor {
             borderWidthNumber: document.getElementById('border-width-number'),
             borderWidthValue: document.getElementById('border-width-value'),
             borderColor: document.getElementById('border-color'),
+            borderOpacity: document.getElementById('border-opacity'),
+            borderOpacityNumber: document.getElementById('border-opacity-number'),
+            borderOpacityValue: document.getElementById('border-opacity-value'),
             borderRadius: document.getElementById('border-radius'),
             borderRadiusNumber: document.getElementById('border-radius-number'),
             borderRadiusValue: document.getElementById('border-radius-value'),
@@ -301,6 +305,20 @@ class ChatEditor {
         
         this.elements.borderColor.addEventListener('input', (e) => {
             this.settings.borderColor = e.target.value;
+            this.updatePreview();
+        });
+        
+        this.elements.borderOpacity.addEventListener('input', (e) => {
+            this.settings.borderOpacity = parseInt(e.target.value);
+            this.elements.borderOpacityNumber.value = this.settings.borderOpacity;
+            this.elements.borderOpacityValue.textContent = this.settings.borderOpacity + '%';
+            this.updatePreview();
+        });
+        
+        this.elements.borderOpacityNumber.addEventListener('input', (e) => {
+            this.settings.borderOpacity = parseInt(e.target.value);
+            this.elements.borderOpacity.value = this.settings.borderOpacity;
+            this.elements.borderOpacityValue.textContent = this.settings.borderOpacity + '%';
             this.updatePreview();
         });
         
@@ -2089,6 +2107,9 @@ class ChatEditor {
         this.elements.borderWidthNumber.value = this.settings.borderWidth;
         this.elements.borderWidthValue.textContent = this.settings.borderWidth + 'px';
         this.elements.borderColor.value = this.settings.borderColor;
+        this.elements.borderOpacity.value = this.settings.borderOpacity;
+        this.elements.borderOpacityNumber.value = this.settings.borderOpacity;
+        this.elements.borderOpacityValue.textContent = this.settings.borderOpacity + '%';
         this.elements.borderRadius.value = this.settings.borderRadius;
         this.elements.borderRadiusNumber.value = this.settings.borderRadius;
         this.elements.borderRadiusValue.textContent = this.settings.borderRadius + 'px';
@@ -2214,6 +2235,7 @@ class ChatEditor {
                 channel: '',
                 borderWidth: 3,
                 borderColor: '#9146ff',
+                borderOpacity: 100,
                 borderRadius: 10,
                 hideBorder: false,
                 backgroundImage: '',

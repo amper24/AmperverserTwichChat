@@ -26,6 +26,7 @@ class TwitchChat {
         this.settings = {
             borderWidth: 3,
             borderColor: '#9146ff',
+            borderOpacity: 100,
             borderRadius: 10,
             hideBorder: false,
             enableGlow: false,
@@ -261,6 +262,7 @@ class TwitchChat {
         // Применяем настройки из URL
         if (urlParams.get('borderWidth')) this.settings.borderWidth = parseInt(urlParams.get('borderWidth'));
         if (urlParams.get('borderColor')) this.settings.borderColor = urlParams.get('borderColor');
+        if (urlParams.get('borderOpacity')) this.settings.borderOpacity = parseInt(urlParams.get('borderOpacity'));
         if (urlParams.get('borderRadius')) this.settings.borderRadius = parseInt(urlParams.get('borderRadius'));
         if (urlParams.has('hideBorder')) this.settings.hideBorder = urlParams.get('hideBorder') === 'true';
         if (urlParams.has('enableGlow')) this.settings.enableGlow = urlParams.get('enableGlow') === 'true';
@@ -391,7 +393,11 @@ class TwitchChat {
         } else {
             this.chatContainer.classList.remove('no-border');
             this.chatContainer.style.borderWidth = this.settings.borderWidth + 'px';
-            this.chatContainer.style.borderColor = this.settings.borderColor;
+            
+            // Применяем прозрачность к цвету рамки
+            const borderOpacity = this.settings.borderOpacity / 100;
+            const borderColorWithOpacity = this.hexToRgba(this.settings.borderColor, borderOpacity);
+            this.chatContainer.style.borderColor = borderColorWithOpacity;
         }
         
         this.chatContainer.style.borderRadius = this.settings.borderRadius + 'px';
@@ -427,15 +433,19 @@ class TwitchChat {
                 
                 // Если есть градиент, комбинируем его с фоновым изображением
                 if (this.settings.backgroundGradient !== 'none') {
+                    // Применяем прозрачность к цветам градиента
+                    const color1WithOpacity = this.hexToRgba(this.settings.gradientColor1, opacity);
+                    const color2WithOpacity = this.hexToRgba(this.settings.gradientColor2, opacity);
+                    
                     const gradient = this.createGradient(
                         this.settings.backgroundGradient,
-                        this.settings.gradientColor1,
-                        this.settings.gradientColor2,
+                        color1WithOpacity,
+                        color2WithOpacity,
                         this.settings.gradientDirection
                     );
                     this.chatContainer.style.background = `${gradient}, url(${this.settings.backgroundImage})`;
                 } else {
-                    this.chatContainer.style.background = 'rgba(255, 255, 255, 0.05)';
+                    this.chatContainer.style.background = `rgba(255, 255, 255, ${opacity * 0.05})`;
                     this.chatContainer.style.backgroundImage = `url(${this.settings.backgroundImage})`;
                 }
                 
