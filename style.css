@@ -74,11 +74,20 @@ body {
 .chat-messages {
     flex: 1;
     padding: 20px;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     background: transparent;
     justify-content: flex-end;
+    /* Скрываем полосы прокрутки для чистого вида */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Скрываем полосы прокрутки в WebKit браузерах */
+.chat-messages::-webkit-scrollbar {
+    display: none;
 }
 
 /* Направление чата */
@@ -92,7 +101,7 @@ body {
 
 .message {
     margin-bottom: 3px;
-    padding: 4px 4px;
+    padding: 4px 8px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     word-wrap: break-word;
@@ -100,6 +109,10 @@ body {
     white-space: pre-wrap;
     opacity: 1;
     transform: translateX(0);
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+    hyphens: auto;
 }
 
 /* Класс для сообщений без анимации */
@@ -558,6 +571,15 @@ body {
     color: #FF5722;
 }
 
+/* Стили для значка канала */
+.channel-badge {
+    display: inline-block;
+    margin-right: 4px;
+    font-size: 0.8em;
+    opacity: 0.7;
+    vertical-align: middle;
+}
+
 /* Стили для эмодзи (7TV, BTTV, FFZ) */
 .emote {
     height: 1.2em;
@@ -568,10 +590,48 @@ body {
     flex-shrink: 0;
 }
 
+/* Стили для эмодзи из разных источников */
+.emote-bttv {
+    /* BTTV эмодзи - дополнительные стили можно добавить здесь */
+    opacity: 1;
+}
+
+.emote-7tv {
+    /* 7TV эмодзи - дополнительные стили можно добавить здесь */
+    opacity: 1;
+}
+
+.emote-ffz {
+    /* FFZ эмодзи - дополнительные стили можно добавить здесь */
+    opacity: 1;
+}
+
+/* Zero-width эмодзи */
+.emote[data-zw="true"] {
+    position: absolute;
+    z-index: 1;
+}
+
+/* Upscale эмодзи */
+.emote.upscale {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
 
 .message .text {
     color: inherit;
     line-height: 1.2;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+/* Стили для длинных URL */
+.message .text a {
+    word-break: break-all;
+    overflow-wrap: break-word;
 }
 
 /* Настройки выравнивания сообщений */
@@ -593,18 +653,21 @@ body {
 
 /* Режимы рамки сообщений */
 .message.border-fit-content {
-    display: block;
+    display: inline-block;
     width: auto;
-    max-width: fit-content;
+    max-width: calc(100% - 16px);
     box-sizing: border-box;
     margin-bottom: 8px;
+    min-width: 0;
 }
 
 .message.border-full-width {
     display: block;
     width: 100%;
+    max-width: 100%;
     box-sizing: border-box;
     margin-bottom: 4px;
+    min-width: 0;
 }
 
 /* Выравнивание рамок работает только в режиме fit-content */
@@ -628,12 +691,14 @@ body {
     /* Контейнер остается flex, рамки подстраиваются под сообщения */
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
 }
 
 .chat-messages.border-full-width {
     /* Контейнер остается flex, но сообщения растягиваются на всю ширину */
     display: flex;
     flex-direction: column;
+    align-items: stretch;
 }
 
 

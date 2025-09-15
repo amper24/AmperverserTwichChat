@@ -2,6 +2,7 @@ class TwitchChat {
     constructor() {
         this.socket = null;
         this.channel = '';
+        this.channels = []; // Массив каналов для общего чата
         this.isConnected = false;
         this.messageCount = 0;
         this.maxMessages = 100; // Максимальное количество сообщений в чате
@@ -17,9 +18,13 @@ class TwitchChat {
         this.channelBadges = {}; // Бейджи канала
         this.userStatsCache = new Map(); // Кэш статистики пользователей
         
-        // Массивы для эмодзи (BTTV)
+        // Массивы для эмодзи (BTTV, 7TV, FFZ)
         this.bttvGlobalEmotes = [];
         this.bttvChannelEmotes = [];
+        this.sevenTVGlobalEmotes = [];
+        this.sevenTVChannelEmotes = [];
+        this.ffzGlobalEmotes = [];
+        this.ffzChannelEmotes = [];
         this.bttvSharedEmotes = [];
         
         // Настройки по умолчанию
@@ -708,9 +713,14 @@ class TwitchChat {
     }
     
     async connectToChat() {
-        if (!this.channel) {
+        if (!this.channel && this.channels.length === 0) {
             this.showError('Название канала не указано');
             return;
+        }
+        
+        // Если канал указан, добавляем его в список каналов
+        if (this.channel && !this.channels.includes(this.channel)) {
+            this.channels.push(this.channel);
         }
         
         // Загружаем все данные для канала (как в jChat v2)
@@ -773,7 +783,12 @@ class TwitchChat {
                 this.socket.send('PASS blah\r\n');
                 this.socket.send('NICK justinfan' + Math.floor(Math.random() * 99999) + '\r\n');
                 this.socket.send('CAP REQ :twitch.tv/commands twitch.tv/tags\r\n');
-                this.socket.send('JOIN #' + this.channel.toLowerCase() + '\r\n');
+                
+                // Подключаемся ко всем каналам
+                this.channels.forEach(channel => {
+                    this.socket.send('JOIN #' + channel.toLowerCase() + '\r\n');
+                    console.log('Joining channel:', channel);
+                });
             };
             
             this.socket.onmessage = (event) => {
@@ -805,9 +820,17 @@ class TwitchChat {
     loadEmotes(channelID) {
         this.emotes = {};
         
+        // Загружаем эмодзи из всех источников параллельно
+        this.loadBTTVEmotes(channelID);
+        this.load7TVEmotes(channelID);
+        this.loadFFZEmotes(channelID);
+    }
+    
+    // Загрузка BTTV эмодзи
+    loadBTTVEmotes(channelID) {
         // BTTV Global emotes
         fetch('https://api.betterttv.net/3/cached/emotes/global')
-                .then(res => {
+            .then(res => {
                 if (!res.ok) {
                     throw new Error(`HTTP ${res.status}`);
                 }
@@ -819,16 +842,18 @@ class TwitchChat {
                         this.emotes[emote.code] = {
                             id: emote.id,
                             image: 'https://cdn.betterttv.net/emote/' + emote.id + '/3x',
+                            source: 'bttv',
                             zeroWidth: ["5e76d338d6581c3724c0f0b2", "5e76d399d6581c3724c0f0b8", "567b5b520e984428652809b6", "5849c9a4f52be01a7ee5f79d", "567b5c080e984428652809ba", "567b5dc00e984428652809bd", "58487cc6f52be01a7ee5f205", "5849c9c8f52be01a7ee5f79e"].includes(emote.id)
                         };
                     });
+                    console.log('BTTV Global emotes loaded:', res.length);
                 }
-                })
+            })
             .catch(err => console.warn('BTTV global emotes error:', err.message));
 
-        // BTTV Channel emotes - используем новый API endpoint
+        // BTTV Channel emotes
         fetch(`https://api.betterttv.net/3/cached/users/twitch/${channelID}`)
-                .then(res => {
+            .then(res => {
                 if (!res.ok) {
                     throw new Error(`HTTP ${res.status}`);
                 }
@@ -840,55 +865,135 @@ class TwitchChat {
                         this.emotes[emote.code] = {
                             id: emote.id,
                             image: 'https://cdn.betterttv.net/emote/' + emote.id + '/3x',
+                            source: 'bttv',
                             zeroWidth: ["5e76d338d6581c3724c0f0b2", "5e76d399d6581c3724c0f0b8", "567b5b520e984428652809b6", "5849c9a4f52be01a7ee5f79d", "567b5c080e984428652809ba", "567b5dc00e984428652809bd", "58487cc6f52be01a7ee5f205", "5849c9c8f52be01a7ee5f79e"].includes(emote.id)
                         };
                     });
+                    console.log('BTTV Channel emotes loaded:', res.channelEmotes.length);
                 }
                 if (res.sharedEmotes && Array.isArray(res.sharedEmotes)) {
                     res.sharedEmotes.forEach(emote => {
                         this.emotes[emote.code] = {
                             id: emote.id,
                             image: 'https://cdn.betterttv.net/emote/' + emote.id + '/3x',
+                            source: 'bttv',
                             zeroWidth: ["5e76d338d6581c3724c0f0b2", "5e76d399d6581c3724c0f0b8", "567b5b520e984428652809b6", "5849c9a4f52be01a7ee5f79d", "567b5c080e984428652809ba", "567b5dc00e984428652809bd", "58487cc6f52be01a7ee5f205", "5849c9c8f52be01a7ee5f79e"].includes(emote.id)
                         };
                     });
+                    console.log('BTTV Shared emotes loaded:', res.sharedEmotes.length);
                 }
             })
             .catch(err => {
                 console.warn('BTTV channel emotes error:', err.message);
-                // Если канал не найден в BTTV, это нормально - не все каналы используют BTTV
             });
-
-
-
-
     }
     
-    
-    // Загружаем эмодзи из BTTV
-    async loadBTTVEmotes() {
-        try {
-            // Загружаем глобальные эмодзи BTTV
-            const globalResponse = await fetch('https://api.betterttv.net/3/cached/emotes/global');
-            if (globalResponse.ok) {
-                const globalData = await globalResponse.json();
-                this.bttvGlobalEmotes = globalData || [];
-                console.log('BTTV Global emotes loaded:', this.bttvGlobalEmotes.length);
-            }
-            
-            // Загружаем эмодзи канала BTTV
-            const channelResponse = await fetch(`https://api.betterttv.net/3/cached/users/twitch/${this.channel}`);
-            if (channelResponse.ok) {
-                const channelData = await channelResponse.json();
-                this.bttvChannelEmotes = channelData.channelEmotes || [];
-                this.bttvSharedEmotes = channelData.sharedEmotes || [];
-                console.log('BTTV Channel emotes loaded:', this.bttvChannelEmotes.length);
-                console.log('BTTV Shared emotes loaded:', this.bttvSharedEmotes.length);
-            }
-        } catch (error) {
-            console.error('Failed to load BTTV emotes:', error);
-        }
+    // Загрузка 7TV эмодзи
+    load7TVEmotes(channelID) {
+        // 7TV Global emotes
+        fetch('https://7tv.io/v3/emote-sets/global')
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(res => {
+                if (res.emotes && Array.isArray(res.emotes)) {
+                    res.emotes.forEach(emote => {
+                        this.emotes[emote.name] = {
+                            id: emote.id,
+                            image: `https://cdn.7tv.app/emote/${emote.id}/4x.webp`,
+                            source: '7tv',
+                            zeroWidth: emote.flags && emote.flags.includes(1) // 7TV zero-width flag
+                        };
+                    });
+                    console.log('7TV Global emotes loaded:', res.emotes.length);
+                }
+            })
+            .catch(err => console.warn('7TV global emotes error:', err.message));
+
+        // 7TV Channel emotes
+        fetch(`https://7tv.io/v3/users/twitch/${channelID}`)
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(res => {
+                if (res.emote_set && res.emote_set.emotes && Array.isArray(res.emote_set.emotes)) {
+                    res.emote_set.emotes.forEach(emote => {
+                        this.emotes[emote.name] = {
+                            id: emote.id,
+                            image: `https://cdn.7tv.app/emote/${emote.id}/4x.webp`,
+                            source: '7tv',
+                            zeroWidth: emote.flags && emote.flags.includes(1)
+                        };
+                    });
+                    console.log('7TV Channel emotes loaded:', res.emote_set.emotes.length);
+                }
+            })
+            .catch(err => {
+                console.warn('7TV channel emotes error:', err.message);
+            });
     }
+    
+    // Загрузка FFZ эмодзи
+    loadFFZEmotes(channelID) {
+        // FFZ Global emotes
+        fetch('https://api.frankerfacez.com/v1/set/global')
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(res => {
+                if (res.sets && res.sets['3'] && res.sets['3'].emoticons) {
+                    res.sets['3'].emoticons.forEach(emote => {
+                        this.emotes[emote.name] = {
+                            id: emote.id,
+                            image: `https:${emote.urls['4'] || emote.urls['2'] || emote.urls['1']}`,
+                            source: 'ffz',
+                            zeroWidth: false // FFZ doesn't have zero-width emotes
+                        };
+                    });
+                    console.log('FFZ Global emotes loaded:', res.sets['3'].emoticons.length);
+                }
+            })
+            .catch(err => console.warn('FFZ global emotes error:', err.message));
+
+        // FFZ Channel emotes
+        fetch(`https://api.frankerfacez.com/v1/room/${channelID}`)
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(res => {
+                if (res.sets && Object.keys(res.sets).length > 0) {
+                    Object.values(res.sets).forEach(set => {
+                        if (set.emoticons && Array.isArray(set.emoticons)) {
+                            set.emoticons.forEach(emote => {
+                                this.emotes[emote.name] = {
+                                    id: emote.id,
+                                    image: `https:${emote.urls['4'] || emote.urls['2'] || emote.urls['1']}`,
+                                    source: 'ffz',
+                                    zeroWidth: false
+                                };
+                            });
+                        }
+                    });
+                    console.log('FFZ Channel emotes loaded');
+                }
+            })
+            .catch(err => {
+                console.warn('FFZ channel emotes error:', err.message);
+            });
+    }
+    
     
     
     async connectViaAPI() {
@@ -964,7 +1069,12 @@ class TwitchChat {
                 return;
             case "PRIVMSG":
                 console.log('PRIVMSG received:', message);
-                if (message.params[0].toLowerCase() !== '#' + this.channel.toLowerCase() || !message.params[1]) {
+                
+                // Проверяем, что сообщение из одного из наших каналов
+                const messageChannel = message.params[0].toLowerCase().substring(1); // убираем #
+                const isFromOurChannel = this.channels.some(ch => ch.toLowerCase() === messageChannel);
+                
+                if (!isFromOurChannel || !message.params[1]) {
                     console.log('PRIVMSG filtered out - wrong channel or no message');
                     return;
                 }
@@ -1015,7 +1125,9 @@ class TwitchChat {
                     this.loadChannelBadgesFromTwitch();
                 }
 
-                this.addChatMessage(nick, message.params[1], message.tags);
+                // Добавляем информацию о канале в userData
+                const userDataWithChannel = { ...message.tags, sourceChannel: messageChannel };
+                this.addChatMessage(nick, message.params[1], userDataWithChannel);
                 return;
         }
     }
@@ -1399,6 +1511,12 @@ class TwitchChat {
         // Используем display-name если есть, иначе username
         const displayName = userData['display-name'] || username;
         
+        // Добавляем значок канала если сообщение не из основного канала
+        let channelBadge = '';
+        if (userData.sourceChannel && userData.sourceChannel !== this.channel) {
+            channelBadge = `<span class="channel-badge" title="Канал: ${userData.sourceChannel}">📺</span>`;
+        }
+        
         // Обрабатываем эмодзи в тексте сообщения
         const processedText = this.processEmotes(text, userData);
         
@@ -1407,9 +1525,9 @@ class TwitchChat {
         if (/^\x01ACTION.*\x01$/.test(text)) {
             const actionText = text.replace(/^\x01ACTION/, '').replace(/\x01$/, '').trim();
             const processedActionText = this.processEmotes(actionText, userData);
-            messageHtml = `<span class="username" style="color: ${userColor}">${badges}${this.escapeHtml(displayName)}</span><span class="text" style="color: ${userColor}">${processedActionText}</span>`;
+            messageHtml = `<span class="username" style="color: ${userColor}">${channelBadge}${badges}${this.escapeHtml(displayName)}</span><span class="text" style="color: ${userColor}">${processedActionText}</span>`;
         } else {
-            messageHtml = `<span class="username" style="color: ${userColor}">${badges}${this.escapeHtml(displayName)}:</span> <span class="text">${processedText}</span>`;
+            messageHtml = `<span class="username" style="color: ${userColor}">${channelBadge}${badges}${this.escapeHtml(displayName)}:</span> <span class="text">${processedText}</span>`;
         }
         
         messageElement.innerHTML = messageHtml;
@@ -1719,19 +1837,31 @@ class TwitchChat {
             });
         }
         
-        // Обработка BTTV эмодзи
+        // Обработка эмодзи из всех источников (BTTV, 7TV, FFZ)
         if (this.emotes) {
-        Object.entries(this.emotes).forEach(emote => {
+            Object.entries(this.emotes).forEach(emote => {
                 if (message.search(this.escapeRegExp(emote[0])) > -1) {
-                if (emote[1].upscale) {
-                    replacements[emote[0]] = '<img class="emote upscale" src="' + emote[1].image + '" />';
-                } else if (emote[1].zeroWidth) {
-                    replacements[emote[0]] = '<img class="emote" data-zw="true" src="' + emote[1].image + '" />';
-                } else {
-                    replacements[emote[0]] = '<img class="emote" src="' + emote[1].image + '" />';
+                    let emoteClass = 'emote';
+                    let emoteAttributes = '';
+                    
+                    // Добавляем класс источника эмодзи
+                    if (emote[1].source) {
+                        emoteClass += ` emote-${emote[1].source}`;
+                    }
+                    
+                    // Обработка zero-width эмодзи
+                    if (emote[1].zeroWidth) {
+                        emoteAttributes += ' data-zw="true"';
+                    }
+                    
+                    // Обработка upscale эмодзи (для BTTV)
+                    if (emote[1].upscale) {
+                        emoteClass += ' upscale';
+                    }
+                    
+                    replacements[emote[0]] = `<img class="${emoteClass}" src="${emote[1].image}"${emoteAttributes} />`;
                 }
-            }
-        });
+            });
         }
         
         // Обработка Bits/Cheers
@@ -2497,6 +2627,7 @@ class TwitchChat {
             console.log('⚠️ OAuth токен не установлен, используем только Client-ID');
         }
         
+        // Используем новый Helix API v5
         fetch(`https://api.twitch.tv/helix/chat/badges?broadcaster_id=${numericChannelId}`, {
             headers: headers
         })
@@ -2680,6 +2811,36 @@ class TwitchChat {
         
     }
     
+    // Функции для управления каналами
+    addChannel(channelName) {
+        if (!this.channels.includes(channelName)) {
+            this.channels.push(channelName);
+            console.log('Added channel:', channelName);
+            
+            // Если подключены, присоединяемся к новому каналу
+            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                this.socket.send('JOIN #' + channelName.toLowerCase() + '\r\n');
+            }
+        }
+    }
+    
+    removeChannel(channelName) {
+        const index = this.channels.indexOf(channelName);
+        if (index > -1) {
+            this.channels.splice(index, 1);
+            console.log('Removed channel:', channelName);
+            
+            // Если подключены, покидаем канал
+            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                this.socket.send('PART #' + channelName.toLowerCase() + '\r\n');
+            }
+        }
+    }
+    
+    getChannels() {
+        return [...this.channels];
+    }
+
     disconnect() {
         if (this.socket) {
             this.socket.close();
@@ -2933,7 +3094,8 @@ class TwitchChat {
         console.log('🌐 Загружаем глобальные бейджи с Twitch API...');
         
         const headers = {
-            'Client-ID': this.twitchClientId
+            'Client-ID': this.twitchClientId,
+            'Accept': 'application/vnd.twitchtv.v5+json'
         };
         
         if (this.twitchOAuthToken) {
@@ -2943,6 +3105,7 @@ class TwitchChat {
             console.log('⚠️ OAuth токен не установлен, используем только Client-ID');
         }
         
+        // Используем новый Helix API v5 для глобальных бейджей
         fetch('https://api.twitch.tv/helix/chat/badges/global', { headers })
             .then(res => {
                 console.log('📡 Глобальные бейджи - статус:', res.status, res.statusText);
@@ -3147,9 +3310,13 @@ class TwitchChat {
         if (globalCache && globalCache.global[badgeType]) {
             const badge = globalCache.global[badgeType];
             if (badge.versions && badge.versions[badgeVersion]) {
-                const url = badge.versions[badgeVersion].image_url_1x;
-                console.log('✅ Найден глобальный бейдж:', url);
-                return url;
+                // Поддерживаем новые форматы URL
+                const version = badge.versions[badgeVersion];
+                const url = version.image_url_1x || version.image_url_2x || version.image_url_4x;
+                if (url) {
+                    console.log('✅ Найден глобальный бейдж:', url);
+                    return url;
+                }
             }
         }
         
@@ -3157,9 +3324,12 @@ class TwitchChat {
         if (globalCache && globalCache.channel[badgeType]) {
             const badge = globalCache.channel[badgeType];
             if (badge.versions && badge.versions[badgeVersion]) {
-                const url = badge.versions[badgeVersion].image_url_1x;
-                console.log('✅ Найден канальный бейдж:', url);
-                return url;
+                const version = badge.versions[badgeVersion];
+                const url = version.image_url_1x || version.image_url_2x || version.image_url_4x;
+                if (url) {
+                    console.log('✅ Найден канальный бейдж:', url);
+                    return url;
+                }
             }
         }
         
@@ -3169,9 +3339,12 @@ class TwitchChat {
             if (channelCache && channelCache.channel[badgeType]) {
                 const badge = channelCache.channel[badgeType];
                 if (badge.versions && badge.versions[badgeVersion]) {
-                    const url = badge.versions[badgeVersion].image_url_1x;
-                    console.log('✅ Найден бейдж канала по ID:', url);
-                    return url;
+                    const version = badge.versions[badgeVersion];
+                    const url = version.image_url_1x || version.image_url_2x || version.image_url_4x;
+                    if (url) {
+                        console.log('✅ Найден бейдж канала по ID:', url);
+                        return url;
+                    }
                 }
             }
         }
