@@ -101,6 +101,14 @@ class TwitchChat {
             appearDuration: this.settings.appearDuration
         });
         this.setupMessageListener();
+        
+        // Добавляем обработчик изменения размера окна
+        window.addEventListener('resize', () => {
+            // Небольшая задержка, чтобы изменения размера успели примениться
+            setTimeout(() => {
+                this.limitChatMessages();
+            }, 100);
+        });
     }
     
     initializeElements() {
@@ -539,6 +547,11 @@ class TwitchChat {
         
         // Обновляем все существующие сообщения
         this.updateExistingMessages();
+        
+        // Проверяем, не переполняется ли чат после изменения настроек
+        setTimeout(() => {
+            this.limitChatMessages();
+        }, 100);
         
         
         // Применяем настройки шрифтов
@@ -1158,14 +1171,39 @@ class TwitchChat {
         if (!this.chatMessagesElement) return;
         
         const messages = this.chatMessagesElement.querySelectorAll('.message');
-        const maxMessages = this.settings.maxMessages || 100; // Используем настройку из конфигурации
+        if (messages.length === 0) return;
         
-        if (messages.length > maxMessages) {
-            // Удаляем самые старые сообщения
-            for (let i = 0; i < messages.length - maxMessages; i++) {
-                messages[i].remove();
+        // Получаем размеры контейнера чата
+        const chatContainer = this.chatMessagesElement;
+        const containerHeight = chatContainer.clientHeight;
+        const containerScrollTop = chatContainer.scrollTop;
+        const containerScrollHeight = chatContainer.scrollHeight;
+        
+        // Проверяем, есть ли прокрутка (сообщения не помещаются)
+        if (containerScrollHeight > containerHeight) {
+            console.log('📏 Сообщения не помещаются в чат, удаляем самые старые...');
+            
+            // Удаляем сообщения, которые не помещаются в видимую область
+            let removedCount = 0;
+            for (let i = 0; i < messages.length; i++) {
+                const message = messages[i];
+                const messageRect = message.getBoundingClientRect();
+                const containerRect = chatContainer.getBoundingClientRect();
+                
+                // Если сообщение находится выше видимой области чата
+                if (messageRect.bottom < containerRect.top) {
+                    message.remove();
+                    removedCount++;
+                } else {
+                    // Если дошли до видимых сообщений, останавливаемся
+                    break;
+                }
             }
-            this.syncMessageCount();
+            
+            if (removedCount > 0) {
+                console.log(`🗑️ Удалено ${removedCount} сообщений, которые не помещались в чат`);
+                this.syncMessageCount();
+            }
         }
     }
     
@@ -1474,7 +1512,7 @@ class TwitchChat {
                     const badgeData = this.badges[badgeKey];
                     badgeElements.push(`<img class="badge" src="${badgeData.image}" alt="${badgeData.title}" title="${badgeData.description}" />`);
                     console.log('✅ Бейдж найден в кэше:', badgeKey);
-                } else {
+                    } else {
                     // Fallback на базовые ролевые значки для канала
                     const fallbackBadge = this.getFallbackBadge(badgeType);
                     if (fallbackBadge) {
@@ -3132,4 +3170,4 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
-// Version: 20250127120006 - Removed hardcoded message limit
+// Version: 20250127120007 - Auto-hide overflow messages based on visible area
