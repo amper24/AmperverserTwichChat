@@ -81,6 +81,7 @@ class ChatEditor {
         this.updatePreview();
     }
     
+    
     initializeElements() {
         this.demoMessagesAdded = false; // Флаг для отслеживания демо-сообщений
         this.previewMessageCount = 0;
@@ -90,6 +91,7 @@ class ChatEditor {
         this.previewConnected = false;
         this.previewSocket = null;
         this.previewChatInstance = null;
+        this.originalAddMessage = null;
         
         // Кэш для бейджей
         this.badgeCache = new Map();
@@ -199,12 +201,9 @@ class ChatEditor {
             fontColor: document.getElementById('font-color'),
             fontColorText: document.getElementById('font-color-text'),
             fontColorPreset: document.getElementById('font-color-preset'),
-            testMessageBg1: document.getElementById('test-message-bg-1'),
-            testMessageBg2: document.getElementById('test-message-bg-2'),
             clearMessageBg1: document.getElementById('clear-message-bg-1'),
             clearMessageBg2: document.getElementById('clear-message-bg-2'),
             clearBackground: document.getElementById('clear-background'),
-            testBackground: document.getElementById('test-background'),
             backgroundPreview: document.getElementById('background-preview'),
             backgroundPreviewImg: document.getElementById('background-preview-img'),
             maxMessages: document.getElementById('max-messages'),
@@ -807,14 +806,7 @@ class ChatEditor {
             this.showColorPresets();
         });
         
-        // Кнопки для фоновых изображений сообщений
-        this.elements.testMessageBg1.addEventListener('click', () => {
-            this.testMessageBackgroundImage(1);
-        });
-        
-        this.elements.testMessageBg2.addEventListener('click', () => {
-            this.testMessageBackgroundImage(2);
-        });
+        // Кнопки для фоновых изображений сообщений удалены
         
         this.elements.clearMessageBg1.addEventListener('click', () => {
             this.settings.messageBackgroundImage1 = '';
@@ -836,9 +828,7 @@ class ChatEditor {
             this.showStatus('🗑️ Фоновое изображение очищено', 'info');
         });
         
-        this.elements.testBackground.addEventListener('click', () => {
-            this.testBackgroundImage();
-        });
+        // Тестовая кнопка фона удалена
         
         // Настройки сообщений
         this.elements.maxMessages.addEventListener('input', (e) => {
@@ -974,45 +964,6 @@ class ChatEditor {
         }
     }
     
-    async testBackgroundImage() {
-        const url = this.elements.backgroundImage.value.trim();
-        if (!url) {
-            this.showStatus('❌ Введите URL изображения', 'error');
-            return;
-        }
-        
-        if (!this.isValidImageUrl(url)) {
-            this.showStatus('❌ Неверный формат URL', 'error');
-            return;
-        }
-        
-        this.showStatus('🔍 Проверка изображения...', 'info');
-        
-        try {
-            // Создаем новый объект Image для проверки
-            const img = new Image();
-            
-            img.onload = () => {
-                this.showStatus('✅ Изображение загружено успешно', 'success');
-                this.showBackgroundPreview(url);
-                this.settings.backgroundImage = url;
-                this.updatePreview();
-            };
-            
-            img.onerror = () => {
-                this.showStatus('❌ Ошибка загрузки изображения', 'error');
-                this.hideBackgroundPreview();
-            };
-            
-            // Устанавливаем CORS для загрузки изображений с других доменов
-            img.crossOrigin = 'anonymous';
-            img.src = url;
-            
-        } catch (error) {
-            this.showStatus('❌ Ошибка при проверке изображения', 'error');
-            this.hideBackgroundPreview();
-        }
-    }
     
     isValidImageUrl(url) {
         try {
@@ -1038,37 +989,6 @@ class ChatEditor {
         this.elements.backgroundPreviewImg.src = '';
     }
     
-    testMessageBackgroundImage(layer) {
-        const url = layer === 1 ? this.elements.messageBackgroundImage1.value.trim() : this.elements.messageBackgroundImage2.value.trim();
-        if (!url) { 
-            this.showStatus('❌ Введите URL изображения', 'error'); 
-            return; 
-        }
-        if (!this.isValidImageUrl(url)) { 
-            this.showStatus('❌ Неверный формат URL', 'error'); 
-            return; 
-        }
-        this.showStatus('🔍 Проверка изображения...', 'info');
-        try {
-            const img = new Image();
-            img.onload = () => {
-                this.showStatus('✅ Изображение загружено успешно', 'success');
-                if (layer === 1) {
-                    this.settings.messageBackgroundImage1 = url;
-                } else {
-                    this.settings.messageBackgroundImage2 = url;
-                }
-                this.updatePreview();
-            };
-            img.onerror = () => {
-                this.showStatus('❌ Ошибка загрузки изображения', 'error');
-            };
-            img.crossOrigin = 'anonymous';
-            img.src = url;
-        } catch (error) {
-            this.showStatus('❌ Ошибка при проверке изображения', 'error');
-        }
-    }
     
     applyMessageBackground(messageElement) {
         // Собираем фоновые изображения
@@ -1090,19 +1010,46 @@ class ChatEditor {
                 this.settings.messageGradientColor2,
                 this.settings.messageGradientDirection
             );
-            backgrounds.push(gradient);
+            
+            // Отладочная информация
+            console.log('Preview applying message gradient:', {
+                type: this.settings.messageBackgroundGradient,
+                color1: this.settings.messageGradientColor1,
+                color2: this.settings.messageGradientColor2,
+                direction: this.settings.messageGradientDirection,
+                gradient: gradient
+            });
+            
+            // Устанавливаем CSS переменные для fallback и OBS совместимости
+            messageElement.style.setProperty('--message-gradient-color-1', this.settings.messageGradientColor1);
+            messageElement.style.setProperty('--message-gradient-color-2', this.settings.messageGradientColor2);
+            messageElement.style.setProperty('--message-gradient-direction', this.settings.messageGradientDirection);
+            messageElement.style.setProperty('--message-fallback-bg', this.settings.messageGradientColor1);
+            messageElement.style.setProperty('--message-gradient', gradient);
+            
+            // Применяем градиент как background
+            if (backgrounds.length > 0) {
+                // Если есть фоновые изображения, добавляем градиент к ним
+                messageElement.style.background = `${gradient}, ${backgrounds.join(', ')}`;
+            } else {
+                // Если нет фоновых изображений, применяем только градиент
+                messageElement.style.background = gradient;
+            }
+            
+            // Дополнительный fallback для OBS
+            messageElement.style.backgroundColor = this.settings.messageGradientColor1;
         } else {
             // Базовый цвет фона с прозрачностью
             const baseColor = this.hexToRgba(this.settings.messageBackgroundColor, this.settings.messageBackgroundOpacity / 100);
             messageElement.style.backgroundColor = baseColor;
-        }
         
-        if (backgrounds.length > 0) {
-            messageElement.style.backgroundImage = backgrounds.join(', ');
-            messageElement.style.backgroundSize = `${this.settings.messageBgSize1}, ${this.settings.messageBgSize2}`;
-            messageElement.style.backgroundPosition = `${this.settings.messageBgPosition1}, ${this.settings.messageBgPosition2}`;
+            // Применяем фоновые изображения если есть
+            if (backgrounds.length > 0) {
+                messageElement.style.backgroundImage = backgrounds.join(', ');
+                messageElement.style.backgroundSize = `${this.settings.messageBgSize1}, ${this.settings.messageBgSize2}`;
+                messageElement.style.backgroundPosition = `${this.settings.messageBgPosition1}, ${this.settings.messageBgPosition2}`;
+            }
         }
-        
     }
     
     hexToRgba(hex, alpha) {
@@ -1130,10 +1077,6 @@ class ChatEditor {
         this.updatePreview();
         
         // Сбрасываем флаг и обновляем демо-сообщения
-        this.demoMessagesAdded = false;
-        this.previewMessageCount = 0;
-        this.addDemoMessages();
-        this.demoMessagesAdded = true;
         
         setTimeout(() => {
             this.showStatus('✅ Предпросмотр обновлен', 'success');
@@ -1147,6 +1090,9 @@ class ChatEditor {
         
         // Применяем настройки к предпросмотру
         this.applyPreviewSettings();
+        
+        // Синхронизируем настройки с чатом предпросмотра
+        this.syncSettingsWithPreviewChat();
         
         // Генерируем URL с параметрами
         const chatURL = this.generateChatURL();
@@ -1168,20 +1114,51 @@ class ChatEditor {
     }
     
     applyPreviewSettings() {
+        // Проверяем, что элементы инициализированы
+        if (!this.elements.previewChatContainer || !this.elements.previewChatMessages) {
+            console.log('Элементы предпросмотра не инициализированы, пропускаем applyPreviewSettings');
+            return;
+        }
+        
         const container = this.elements.previewChatContainer;
         
-        // Применяем настройки рамки
+        // Отладочная информация
+        console.log('Preview applySettings called with settings:', {
+            backgroundGradient: this.settings.backgroundGradient,
+            gradientColor1: this.settings.gradientColor1,
+            gradientColor2: this.settings.gradientColor2,
+            gradientDirection: this.settings.gradientDirection,
+            hideBackground: this.settings.hideBackground,
+            messageAlignment: this.settings.messageAlignment,
+            borderMode: this.settings.borderMode,
+            borderAlignment: this.settings.borderAlignment,
+            chatDirection: this.settings.chatDirection,
+            fontFamily: this.settings.fontFamily,
+            fontSize: this.settings.fontSize,
+            fontColor: this.settings.fontColor
+        });
+        
+        // Рамка
         if (this.settings.hideBorder) {
             container.classList.add('no-border');
         } else {
             container.classList.remove('no-border');
             container.style.borderWidth = this.settings.borderWidth + 'px';
-            container.style.borderColor = this.settings.borderColor;
+            
+            // Применяем прозрачность к цвету рамки
+            const borderOpacity = this.settings.borderOpacity / 100;
+            const borderColorWithOpacity = this.hexToRgba(this.settings.borderColor, borderOpacity);
+            container.style.borderColor = borderColorWithOpacity;
         }
         
         container.style.borderRadius = this.settings.borderRadius + 'px';
         
         // Применяем свечение
+        console.log('Preview glow settings:', {
+            enableGlow: this.settings.enableGlow,
+            glowColor: this.settings.glowColor,
+            glowIntensity: this.settings.glowIntensity
+        });
         if (this.settings.enableGlow) {
             const glowColor = this.settings.glowColor;
             const intensity = this.settings.glowIntensity;
@@ -1190,7 +1167,8 @@ class ChatEditor {
             container.style.boxShadow = '';
         }
         
-        // Применяем настройки фона
+        // Фон
+        console.log('Preview chatContainer element:', container);
         if (this.settings.hideBackground) {
             container.classList.add('no-background');
         } else {
@@ -1199,15 +1177,32 @@ class ChatEditor {
             if (this.settings.backgroundImage) {
                 // Применяем фоновое изображение с прозрачностью
                 const opacity = this.settings.backgroundOpacity / 100;
-                container.style.backgroundImage = `url(${this.settings.backgroundImage})`;
-                container.style.backgroundSize = this.settings.backgroundSize;
-                container.style.backgroundPosition = this.settings.backgroundPosition;
-                container.style.backgroundRepeat = 'no-repeat';
                 
                 // Создаем псевдоэлемент для прозрачности фонового изображения
                 container.style.position = 'relative';
-                container.style.background = 'rgba(255, 255, 255, 0.05)';
                 container.style.backdropFilter = 'blur(10px)';
+                
+                // Если есть градиент, комбинируем его с фоновым изображением
+                if (this.settings.backgroundGradient !== 'none') {
+                    // Применяем прозрачность к цветам градиента
+                    const color1WithOpacity = this.hexToRgba(this.settings.gradientColor1, opacity);
+                    const color2WithOpacity = this.hexToRgba(this.settings.gradientColor2, opacity);
+                    
+                    const gradient = this.createGradient(
+                        this.settings.backgroundGradient,
+                        color1WithOpacity,
+                        color2WithOpacity,
+                        this.settings.gradientDirection
+                    );
+                    container.style.background = `${gradient}, url(${this.settings.backgroundImage})`;
+                } else {
+                    container.style.background = `rgba(255, 255, 255, ${opacity * 0.05})`;
+                    container.style.backgroundImage = `url(${this.settings.backgroundImage})`;
+                }
+                
+                container.style.backgroundSize = this.settings.backgroundSize;
+                container.style.backgroundPosition = this.settings.backgroundPosition;
+                container.style.backgroundRepeat = 'no-repeat';
                 
                 // Удаляем старый псевдоэлемент если есть
                 const oldOverlay = container.querySelector('.background-overlay');
@@ -1245,22 +1240,64 @@ class ChatEditor {
                 
                 // Применяем цвет или градиент
                 if (this.settings.backgroundGradient !== 'none') {
+                    // Применяем прозрачность к цветам градиента
+                    const opacity = this.settings.backgroundOpacity / 100;
+                    const color1WithOpacity = this.hexToRgba(this.settings.gradientColor1, opacity);
+                    const color2WithOpacity = this.hexToRgba(this.settings.gradientColor2, opacity);
+                    
                     const gradient = this.createGradient(
                         this.settings.backgroundGradient,
-                        this.settings.gradientColor1,
-                        this.settings.gradientColor2,
+                        color1WithOpacity,
+                        color2WithOpacity,
                         this.settings.gradientDirection
                     );
+                    
+                    // Отладочная информация
+                    console.log('Preview applying background gradient:', {
+                        type: this.settings.backgroundGradient,
+                        color1: this.settings.gradientColor1,
+                        color2: this.settings.gradientColor2,
+                        direction: this.settings.gradientDirection,
+                        gradient: gradient
+                    });
+                    
+                    // Применяем градиент несколькими способами для лучшей совместимости
                     container.style.background = gradient;
+                    container.style.backgroundImage = gradient;
+                    
+                    // Устанавливаем CSS переменные для fallback
+                    container.style.setProperty('--gradient-color-1', this.settings.gradientColor1);
+                    container.style.setProperty('--gradient-color-2', this.settings.gradientColor2);
+                    container.style.setProperty('--gradient-direction', this.settings.gradientDirection);
+                    container.style.setProperty('--gradient-image', gradient);
+                    
+                    // Дополнительный fallback для OBS
+                    container.style.setProperty('--fallback-bg', this.settings.gradientColor1);
+                    
+                    // Отладочная информация после применения
+                    console.log('Preview gradient applied to chatContainer:', {
+                        background: container.style.background,
+                        backgroundImage: container.style.backgroundImage,
+                        computedStyle: window.getComputedStyle(container).background
+                    });
                 } else {
-                    container.style.background = this.settings.backgroundColor;
+                    // Применяем цвет фона с учетом прозрачности
+                    const opacity = this.settings.backgroundOpacity / 100;
+                    const color = this.hexToRgba(this.settings.backgroundColor, opacity);
+                    container.style.background = color;
+                    container.style.backgroundImage = '';
+                    container.style.setProperty('--fallback-bg', color);
                 }
                 
                 container.style.backdropFilter = 'blur(10px)';
             }
         }
         
-        // Применяем настройки выравнивания
+        // Размеры
+        container.style.width = this.settings.chatWidth + 'px';
+        container.style.height = this.settings.chatHeight + 'px';
+        
+        // Применяем настройки выравнивания к контейнеру сообщений
         this.elements.previewChatMessages.className = this.elements.previewChatMessages.className.replace(/align-\w+/g, '');
         this.elements.previewChatMessages.classList.add(`align-${this.settings.messageAlignment}`);
         
@@ -1275,7 +1312,6 @@ class ChatEditor {
         // Применяем направление чата
         this.elements.previewChatMessages.className = this.elements.previewChatMessages.className.replace(/direction-\w+-\w+/g, '');
         this.elements.previewChatMessages.classList.add(`direction-${this.settings.chatDirection}`);
-        
         
         // Применяем настройки шрифтов к контейнеру сообщений
         this.elements.previewChatMessages.style.fontFamily = this.settings.fontFamily;
@@ -1303,159 +1339,201 @@ class ChatEditor {
         }
     }
     
-    updateExistingPreviewMessages() {
-        const messagesContainer = this.elements.previewChatMessages;
-        if (!messagesContainer) return;
-        
-        const messages = messagesContainer.querySelectorAll('.preview-message');
-        messages.forEach(message => {
-            // Обновляем настройки шрифтов для каждого сообщения
-            message.style.fontFamily = this.settings.fontFamily;
-            message.style.fontSize = this.settings.fontSize + 'px';
-            message.style.fontWeight = this.settings.fontWeight;
-            message.style.lineHeight = this.settings.lineHeight;
-            message.style.letterSpacing = this.settings.letterSpacing + 'px';
-            message.style.color = this.settings.fontColor;
-            
-            // Обновляем выравнивание сообщения
-            message.className = message.className.replace(/align-\w+/g, '');
-            message.classList.add(`align-${this.settings.messageAlignment}`);
-            
-            // Обновляем режим рамки
-            message.classList.remove('border-full-width', 'border-fit-content');
-            if (this.settings.borderMode === 'full-width') {
-                message.classList.add('border-full-width');
-            } else {
-                message.classList.add('border-fit-content');
-            }
-            
-            // Обновляем фон сообщения
-            this.applyMessageBackground(message);
-        });
-    }
-    
-    async addDemoMessages() {
+    addPreviewMessage(username, text, userData = {}) {
         const messagesContainer = this.elements.previewChatMessages;
         
         if (!messagesContainer) {
-            console.error('previewChatMessages element not found!');
+            console.error('previewChatMessages element not found in addPreviewMessage!');
             return;
         }
         
-        // Полная очистка предпросмотра
-        this.clearPreviewMessages();
+        const messageElement = document.createElement('div');
+        messageElement.className = 'preview-message';
+        messageElement.setAttribute('data-nick', username);
+        messageElement.setAttribute('data-time', Date.now());
+        if (userData.id) {
+            messageElement.setAttribute('data-id', userData.id);
+        }
+        if (userData.sourceChannel) {
+            messageElement.setAttribute('data-source-channel', userData.sourceChannel);
+        }
         
-        // Используем только SVG значки (без API)
-        console.log('Demo badges ready (SVG only)');
-        
-        // Добавляем демо-сообщения с метаданными
-        const demoMessages = [
-            { 
-                username: 'Streamer', 
-                text: 'Привет всем! Как дела?', 
-                userData: { 
-                    color: '#ff6b6b', 
-                    badges: ['broadcaster/1']
-                } 
-            },
-            { 
-                username: 'Moderator', 
-                text: 'Соблюдайте правила чата!', 
-                userData: { 
-                    color: '#4CAF50', 
-                    badges: ['moderator/1']
-                } 
-            },
-            { 
-                username: 'VIPUser', 
-                text: 'Отличный контент!', 
-                userData: { 
-                    color: '#FF9800', 
-                    badges: ['vip/1']
-                } 
-            },
-            { 
-                username: 'Subscriber', 
-                text: 'Подписался на 6 месяцев!', 
-                userData: { 
-                    color: '#9C27B0', 
-                    badges: ['subscriber/6']
-                } 
-            },
-            { 
-                username: 'MultiBadgeUser', 
-                text: 'У меня несколько бейджиков! 🎉', 
-                userData: { 
-                    color: '#FF9800',
-                    badges: ['moderator/1', 'vip/1', 'subscriber/1']
-                } 
-            },
-            { 
-                username: 'PrimeUser', 
-                text: 'Привет всем! 👋', 
-                userData: { 
-                    color: '#00BCD4',
-                    badges: ['premium/1']
-                } 
-            },
-            { 
-                username: 'BitsDonator', 
-                text: 'GG! 🎮', 
-                userData: { 
-                    color: '#FF5722',
-                    badges: ['bits/1000']
-                } 
-            },
-            { 
-                username: 'GiftLeader', 
-                text: 'Это очень длинное сообщение для демонстрации того, как работает перенос текста в чате. Оно должно корректно отображаться на нескольких строках!', 
-                userData: { 
-                    color: '#E91E63',
-                    badges: ['sub-gift-leader/1']
-                } 
-            }
-        ];
-        
-        demoMessages.forEach((msg, index) => {
-            const delay = this.settings.staggerAnimations ? 
-                index * this.settings.staggerDelay : 
-                index * 300;
+        // Применяем анимацию если выбрана
+        if (this.settings.appearAnimation !== 'none') {
+            const animationName = this.getAnimationName(this.settings.appearAnimation);
+            const animationDuration = `${this.settings.appearDuration}ms`;
+            const animationDelay = this.settings.appearDelay > 0 ? `${this.settings.appearDelay}ms` : '0ms';
+            
+            console.log('Preview applying animation:', this.settings.appearAnimation, '->', animationName);
+            
+            // Сбрасываем все стили анимации
+            messageElement.style.animation = '';
+            messageElement.style.animationName = '';
+            messageElement.style.animationDuration = '';
+            messageElement.style.animationDelay = '';
+            messageElement.style.animationFillMode = '';
+            messageElement.style.animationTimingFunction = '';
+            
+            // Устанавливаем начальное состояние для анимации
+            messageElement.style.opacity = '0';
+            messageElement.style.transform = this.getInitialTransform(this.settings.appearAnimation);
+            
+            // Применяем анимацию появления
+            messageElement.style.animation = `${animationName} ${animationDuration} ease-out ${animationDelay} forwards`;
+            
+            // Fallback: если анимация не сработает, показываем элемент через некоторое время
             setTimeout(() => {
-                this.addPreviewMessage(msg.username, msg.text, msg.userData);
-            }, delay);
-        });
-        
-        // Статус подключения удален
-    }
-    
-    syncPreviewMessageCount() {
-        const actualCount = this.elements.previewChatMessages.querySelectorAll('.preview-message').length;
-        this.previewMessageCount = actualCount;
-    }
-    
-    scrollPreviewToBottom() {
-        if (this.elements.previewChatMessages) {
-            // Используем requestAnimationFrame для более плавной прокрутки
-            requestAnimationFrame(() => {
-                this.elements.previewChatMessages.scrollTop = this.elements.previewChatMessages.scrollHeight;
-            });
+                if (messageElement.style.opacity === '0' || getComputedStyle(messageElement).opacity === '0') {
+                    messageElement.style.opacity = '1';
+                    messageElement.style.transform = 'translateX(0)';
+                    messageElement.style.animation = '';
+                }
+            }, this.settings.appearDuration + this.settings.appearDelay + 100);
+        } else {
+            // Если анимация отключена или выбрана "Нет", просто показываем элемент
+            messageElement.style.opacity = '1';
+            messageElement.style.transform = 'translateX(0)';
         }
-    }
-    
-    limitPreviewMessages() {
-        if (!this.elements.previewChatMessages) return;
         
-        const messages = this.elements.previewChatMessages.querySelectorAll('.preview-message');
-        const maxMessages = 8; // Максимальное количество видимых сообщений
+        // Применяем настройки фона сообщения
+        this.applyMessageBackground(messageElement);
         
-        if (messages.length > maxMessages) {
-            // Удаляем самые старые сообщения
-            for (let i = 0; i < messages.length - maxMessages; i++) {
-                messages[i].remove();
+        // Применяем выравнивание сообщений
+        messageElement.classList.add(`align-${this.settings.messageAlignment}`);
+        
+        // Применяем режим рамки
+        if (this.settings.borderMode === 'full-width') {
+            messageElement.classList.add('border-full-width');
+        } else {
+            messageElement.classList.add('border-fit-content');
+        }
+        
+        // Применяем выравнивание рамки
+        messageElement.classList.add(`border-align-${this.settings.borderAlignment}`);
+        
+        // Применяем настройки шрифтов к сообщению
+        messageElement.style.fontFamily = this.settings.fontFamily;
+        messageElement.style.fontSize = this.settings.fontSize + 'px';
+        messageElement.style.fontWeight = this.settings.fontWeight;
+        messageElement.style.lineHeight = this.settings.lineHeight;
+        messageElement.style.letterSpacing = this.settings.letterSpacing + 'px';
+        messageElement.style.color = this.settings.fontColor;
+        
+        // Определяем цвет пользователя
+        const userColor = userData.color || this.getDefaultUserColor(username);
+        
+        // Создаем бейджики
+        const badges = this.createUserBadges(userData, username);
+        
+        // Используем display-name если есть, иначе username
+        const displayName = userData['display-name'] || username;
+        
+        // Добавляем значок канала только если это общий чат (несколько каналов)
+        let channelBadge = '';
+        if (this.settings.channels && this.settings.channels.length > 1 && userData.sourceChannel && userData.sourceChannel !== this.settings.channel) {
+            // Получаем аватарку канала
+            const channelAvatar = this.getChannelAvatar(userData.sourceChannel);
+            channelBadge = `<span class="channel-badge" title="Канал: ${userData.sourceChannel}">${channelAvatar}</span>`;
+        }
+        
+        // Обрабатываем эмодзи в тексте сообщения
+        const processedText = this.processEmotes(text, userData);
+        
+        // Обработка ACTION сообщений (/me)
+        let messageHtml = '';
+        if (/^\x01ACTION.*\x01$/.test(text)) {
+            const actionText = text.replace(/^\x01ACTION/, '').replace(/\x01$/, '').trim();
+            const processedActionText = this.processEmotes(actionText, userData);
+            messageHtml = `<span class="username" style="color: ${userColor}">${channelBadge}${badges}${this.escapeHtml(displayName)}</span><span class="text" style="color: ${userColor}">${processedActionText}</span>`;
+        } else {
+            messageHtml = `<span class="username" style="color: ${userColor}">${channelBadge}${badges}${this.escapeHtml(displayName)}:</span> <span class="text">${processedText}</span>`;
+        }
+        
+        messageElement.innerHTML = messageHtml;
+        
+        messagesContainer.appendChild(messageElement);
+        this.previewMessageCount++;
+        
+        // Синхронизируем счетчик с реальным количеством сообщений
+        this.syncPreviewMessageCount();
+        
+        // Ограничиваем количество видимых сообщений в предпросмотре
+        this.limitPreviewMessages();
+        
+        // Если включено исчезновение сообщений, удаляем их через некоторое время
+        if (this.settings.fadeMessages) {
+            const totalDisplayTime = this.settings.messageDisplayTime * 1000;
+            setTimeout(() => {
+                if (this.settings.disappearAnimation !== 'none') {
+                    // Применяем анимацию исчезновения с правильной длительностью
+                    const animationName = this.getAnimationName(this.settings.disappearAnimation);
+                    // Сбрасываем все предыдущие анимации и стили
+                    messageElement.style.animation = '';
+                    messageElement.style.animationName = '';
+                    messageElement.style.animationDuration = '';
+                    messageElement.style.animationDelay = '';
+                    messageElement.style.animationFillMode = '';
+                    messageElement.style.animationTimingFunction = '';
+                    // Убираем классы анимаций появления
+                    messageElement.classList.remove('no-animation');
+                    // Применяем новую анимацию исчезновения
+                    messageElement.style.animation = `${animationName} ${this.settings.disappearDuration}ms ease-in forwards`;
+                    setTimeout(() => {
+                        if (messageElement.parentNode) {
+                            messageElement.parentNode.removeChild(messageElement);
+                            this.syncPreviewMessageCount(); // Синхронизируем после удаления
+                        }
+                    }, this.settings.disappearDuration);
+                } else {
+                    // Если анимация исчезновения отключена, просто удаляем элемент
+                    if (messageElement.parentNode) {
+                        messageElement.parentNode.removeChild(messageElement);
+                        this.syncPreviewMessageCount(); // Синхронизируем после удаления
+                    }
+                }
+            }, totalDisplayTime);
+        }
+        
+        // Удаляем старые сообщения если их слишком много
+        this.syncPreviewMessageCount(); // Синхронизируем счетчик перед проверкой
+        if (this.previewMessageCount > this.previewMaxMessages) {
+            const firstMessage = messagesContainer.querySelector('.preview-message');
+            if (firstMessage) {
+                if (this.settings.fadeMessages && this.settings.disappearAnimation !== 'none') {
+                    // Добавляем анимацию исчезновения с правильной длительностью
+                    const animationName = this.getAnimationName(this.settings.disappearAnimation);
+                    // Сбрасываем все предыдущие анимации и стили
+                    firstMessage.style.animation = '';
+                    firstMessage.style.animationName = '';
+                    firstMessage.style.animationDuration = '';
+                    firstMessage.style.animationDelay = '';
+                    firstMessage.style.animationFillMode = '';
+                    firstMessage.style.animationTimingFunction = '';
+                    // Убираем классы анимаций появления
+                    firstMessage.classList.remove('no-animation');
+                    // Применяем новую анимацию исчезновения
+                    firstMessage.style.animation = `${animationName} ${this.settings.disappearDuration}ms ease-in forwards`;
+                    // Удаляем после анимации
+            setTimeout(() => {
+                        if (firstMessage.parentNode) {
+                            firstMessage.remove();
+                            this.syncPreviewMessageCount(); // Синхронизируем после удаления
+                        }
+                    }, this.settings.disappearDuration);
+                } else {
+                    // Обычное удаление без анимации
+                    firstMessage.remove();
+                    this.syncPreviewMessageCount(); // Синхронизируем после удаления
+                }
             }
-            this.syncPreviewMessageCount();
         }
+        
+        // Прокручиваем вниз
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
+    
+    
+    
     
     getAnimationName(animationType) {
         const animationMap = {
@@ -1667,178 +1745,14 @@ class ChatEditor {
         return fallbackMap[badgeType] || ''; // Если значка нет - ничего не показываем
     }
     
-    addPreviewMessage(username, text, userData = {}) {
-        const messagesContainer = this.elements.previewChatMessages;
-        
-        if (!messagesContainer) {
-            console.error('previewChatMessages element not found in addPreviewMessage!');
-            return;
-        }
-        
-        // Определяем цвет пользователя
-        const userColor = userData.color || this.getDefaultUserColor(username);
-        
-        // Создаем бейджики
-        const badges = this.createUserBadges(userData);
-        
-        // Используем display-name если есть, иначе username
-        const displayName = userData.displayName || username;
-        
-        const messageElement = document.createElement('div');
-        messageElement.className = 'preview-message';
-        
-        console.log('Preview animation settings:', this.settings.appearAnimation);
-        
-        // Применяем анимацию если выбрана
-        if (this.settings.appearAnimation !== 'none') {
-            const animationName = this.getAnimationName(this.settings.appearAnimation);
-            const animationDuration = `${this.settings.appearDuration}ms`;
-            const animationDelay = this.settings.appearDelay > 0 ? `${this.settings.appearDelay}ms` : '0ms';
-            
-            console.log('Preview applying animation:', this.settings.appearAnimation, '->', animationName);
-            
-            // Сбрасываем все стили анимации
-            messageElement.style.animation = '';
-            messageElement.style.animationName = '';
-            messageElement.style.animationDuration = '';
-            messageElement.style.animationDelay = '';
-            messageElement.style.animationFillMode = '';
-            messageElement.style.animationTimingFunction = '';
-            
-            // Устанавливаем начальное состояние для анимации
-            messageElement.style.opacity = '0';
-            messageElement.style.transform = this.getInitialTransform(this.settings.appearAnimation);
-            
-            // Применяем анимацию появления
-            messageElement.style.animation = `${animationName} ${animationDuration} ease-out ${animationDelay} forwards`;
-            
-            // Fallback: если анимация не сработает, показываем элемент через некоторое время
-            setTimeout(() => {
-                if (messageElement.style.opacity === '0' || getComputedStyle(messageElement).opacity === '0') {
-                    messageElement.style.opacity = '1';
-                    messageElement.style.transform = 'translateX(0)';
-                    messageElement.style.animation = '';
-                }
-            }, this.settings.appearDuration + this.settings.appearDelay + 100);
-        } else {
-            // Если анимация отключена или выбрана "Нет", просто показываем элемент
-            messageElement.style.opacity = '1';
-            messageElement.style.transform = 'translateX(0)';
-        }
-        
-        // Применяем настройки фона сообщения
-        this.applyMessageBackground(messageElement);
-        
-        // Применяем центрирование
-        // Применяем выравнивание сообщений
-        messageElement.classList.add(`align-${this.settings.messageAlignment}`);
-        
-        // Применяем режим рамки
-        if (this.settings.borderMode === 'full-width') {
-            messageElement.classList.add('border-full-width');
-        } else {
-            messageElement.classList.add('border-fit-content');
-        }
-        
-        // Применяем выравнивание рамки
-        messageElement.classList.add(`border-align-${this.settings.borderAlignment}`);
-        
-        // Применяем настройки шрифтов
-        messageElement.style.fontFamily = this.settings.fontFamily;
-        messageElement.style.fontSize = this.settings.fontSize + 'px';
-        messageElement.style.fontWeight = this.settings.fontWeight;
-        messageElement.style.lineHeight = this.settings.lineHeight;
-        messageElement.style.letterSpacing = this.settings.letterSpacing + 'px';
-        messageElement.style.color = this.settings.fontColor;
-        
-        // Обрабатываем эмодзи в тексте сообщения
-        const processedText = this.processEmotes(text);
-        
-        messageElement.innerHTML = `<span class="username" style="color: ${userColor}">${badges}${this.escapeHtml(displayName)}:</span> <span class="text">${processedText}</span>`;
-        
-        messagesContainer.appendChild(messageElement);
-        this.previewMessageCount++;
-        
-        // Синхронизируем счетчик с реальным количеством сообщений
-        this.syncPreviewMessageCount();
-        
-        // Ограничиваем количество видимых сообщений в предпросмотре
-        this.limitPreviewMessages();
-        
-        // Если включено исчезновение сообщений, удаляем их через некоторое время
-        if (this.settings.fadeMessages) {
-            const totalDisplayTime = this.settings.messageDisplayTime * 1000;
-            setTimeout(() => {
-                if (this.settings.disappearAnimation !== 'none') {
-                    // Применяем анимацию исчезновения с правильной длительностью
-                    const animationName = this.getAnimationName(this.settings.disappearAnimation);
-                    // Сбрасываем все предыдущие анимации и стили
-                    messageElement.style.animation = '';
-                    messageElement.style.animationName = '';
-                    messageElement.style.animationDuration = '';
-                    messageElement.style.animationDelay = '';
-                    messageElement.style.animationFillMode = '';
-                    messageElement.style.animationTimingFunction = '';
-                    // Убираем классы анимаций появления
-                    messageElement.classList.remove('no-animation');
-                    // Применяем новую анимацию исчезновения
-                    messageElement.style.animation = `${animationName} ${this.settings.disappearDuration}ms ease-in forwards`;
-                    setTimeout(() => {
-                        if (messageElement.parentNode) {
-                            messageElement.parentNode.removeChild(messageElement);
-                            this.syncPreviewMessageCount(); // Синхронизируем после удаления
-                        }
-                    }, this.settings.disappearDuration);
-                } else {
-                    // Если анимация исчезновения отключена, просто удаляем элемент
-                    if (messageElement.parentNode) {
-                        messageElement.parentNode.removeChild(messageElement);
-                        this.syncPreviewMessageCount(); // Синхронизируем после удаления
-                    }
-                }
-            }, totalDisplayTime);
-        }
-        
-        // Удаляем старые сообщения если их слишком много
-        this.syncPreviewMessageCount(); // Синхронизируем счетчик перед проверкой
-        if (this.previewMessageCount > this.previewMaxMessages) {
-            const firstMessage = messagesContainer.querySelector('.preview-message');
-            if (firstMessage) {
-                if (this.settings.fadeMessages && this.settings.disappearAnimation !== 'none') {
-                    // Добавляем анимацию исчезновения с правильной длительностью
-                    const animationName = this.getAnimationName(this.settings.disappearAnimation);
-                    // Сбрасываем все предыдущие анимации и стили
-                    firstMessage.style.animation = '';
-                    firstMessage.style.animationName = '';
-                    firstMessage.style.animationDuration = '';
-                    firstMessage.style.animationDelay = '';
-                    firstMessage.style.animationFillMode = '';
-                    firstMessage.style.animationTimingFunction = '';
-                    // Убираем классы анимаций появления
-                    firstMessage.classList.remove('no-animation');
-                    // Применяем новую анимацию исчезновения
-                    firstMessage.style.animation = `${animationName} ${this.settings.disappearDuration}ms ease-in forwards`;
-                    // Удаляем после анимации
-                    setTimeout(() => {
-                        if (firstMessage.parentNode) {
-                            firstMessage.remove();
-                            this.syncPreviewMessageCount(); // Синхронизируем после удаления
-                        }
-                    }, this.settings.disappearDuration);
-                } else {
-                    // Обычное удаление без анимации
-                    firstMessage.remove();
-                    this.syncPreviewMessageCount(); // Синхронизируем после удаления
-                }
-            }
-        }
-        
-        // Прокручиваем вниз
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
     
     getDefaultUserColor(username) {
-        // Генерируем цвет на основе имени пользователя
+        // Если основной чат доступен, используем его систему цветов
+        if (window.twitchChat && this.previewConnected) {
+            return window.twitchChat.getDefaultUserColor(username);
+        }
+        
+        // Fallback для случая, когда основной чат недоступен
         const colors = [
             '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
             '#FFA500', '#800080', '#FFC0CB', '#A52A2A', '#808080', '#000000'
@@ -1852,7 +1766,13 @@ class ChatEditor {
         return colors[Math.abs(hash) % colors.length];
     }
     
-    createUserBadges(userData) {
+    createUserBadges(userData, username = '') {
+        // Если основной чат доступен, используем его систему бейджей
+        if (window.twitchChat && this.previewConnected) {
+            return window.twitchChat.createUserBadges(userData, username);
+        }
+        
+        // Fallback для случая, когда основной чат недоступен
         let badges = '';
         
         // Проверяем, нужно ли показывать значки пользователей
@@ -1865,7 +1785,7 @@ class ChatEditor {
             for (const badge of userData.badges) {
                 const [badgeType, badgeVersion] = badge.split('/');
                 
-                // Используем старые эмодзи значки
+                // Используем настоящие значки Twitch
                 const badgeEmoji = this.getFallbackBadge(badgeType);
                 if (badgeEmoji) {
                     badges += badgeEmoji;
@@ -1915,12 +1835,46 @@ class ChatEditor {
     }
     
     // Обрабатываем эмодзи в сообщении (для предпросмотра)
-    processEmotes(text) {
+    processEmotes(text, userData = {}) {
         if (!text) return text;
         
-        // Для предпросмотра используем простую обработку
-        // В реальном чате эмодзи будут загружаться через API
-        return text;
+        // Если основной чат доступен, используем его систему обработки эмодзи
+        if (window.twitchChat && this.previewConnected) {
+            return window.twitchChat.processEmotes(text, userData);
+        }
+        
+        // Fallback для случая, когда основной чат недоступен
+        // Простая обработка базовых эмодзи
+        let processedText = text;
+        
+        // Обработка базовых Twitch эмодзи
+        const basicEmotes = {
+            'Kappa': 'https://static-cdn.jtvnw.net/emoticons/v2/25/default/dark/1.0',
+            'PogChamp': 'https://static-cdn.jtvnw.net/emoticons/v2/305954156/default/dark/1.0',
+            'OMEGALUL': 'https://static-cdn.jtvnw.net/emoticons/v2/305954156/default/dark/1.0',
+            'LUL': 'https://static-cdn.jtvnw.net/emoticons/v2/425618/default/dark/1.0',
+            '4Head': 'https://static-cdn.jtvnw.net/emoticons/v2/354/default/dark/1.0',
+            'monkaS': 'https://static-cdn.jtvnw.net/emoticons/v2/56/default/dark/1.0',
+            'monkaW': 'https://static-cdn.jtvnw.net/emoticons/v2/56/default/dark/1.0',
+            'monkaGIGA': 'https://static-cdn.jtvnw.net/emoticons/v2/56/default/dark/1.0',
+            'monkaOMEGA': 'https://static-cdn.jtvnw.net/emoticons/v2/56/default/dark/1.0',
+            'monkaSTEER': 'https://static-cdn.jtvnw.net/emoticons/v2/56/default/dark/1.0',
+            'monkaTOS': 'https://static-cdn.jtvnw.net/emoticons/v2/56/default/dark/1.0',
+            'monkaWTF': 'https://static-cdn.jtvnw.net/emoticons/v2/56/default/dark/1.0',
+            'monkaX': 'https://static-cdn.jtvnw.net/emoticons/v2/56/default/dark/1.0',
+            'monkaY': 'https://static-cdn.jtvnw.net/emoticons/v2/56/default/dark/1.0',
+            'monkaZ': 'https://static-cdn.jtvnw.net/emoticons/v2/56/default/dark/1.0'
+        };
+        
+        // Заменяем базовые эмодзи
+        Object.keys(basicEmotes).forEach(emote => {
+            const regex = new RegExp(`\\b${emote}\\b`, 'g');
+            if (processedText.includes(emote)) {
+                processedText = processedText.replace(regex, `<img class="emote" src="${basicEmotes[emote]}" alt="${emote}" title="${emote}" />`);
+            }
+        });
+        
+        return processedText;
     }
     
     getBadgeTitle(badgeType, badgeVersion) {
@@ -1935,6 +1889,12 @@ class ChatEditor {
     }
     
     escapeHtml(text) {
+        // Если основной чат доступен, используем его функцию экранирования
+        if (window.twitchChat && this.previewConnected) {
+            return window.twitchChat.escapeHtml(text);
+        }
+        
+        // Fallback для случая, когда основной чат недоступен
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
@@ -2291,11 +2251,7 @@ class ChatEditor {
             this.applySettingsToUI();
             this.updatePreview();
             
-            // Добавляем демо-сообщения заново
-            setTimeout(() => {
-                this.addDemoMessages();
                 this.showStatus('🔄 Настройки сброшены', 'success');
-            }, 100);
         }
     }
     
@@ -2366,11 +2322,7 @@ class ChatEditor {
                 this.saveSettings();
                 this.updatePreview();
                 
-                // Добавляем демо-сообщения заново
-                setTimeout(() => {
-                    this.addDemoMessages();
                 this.showStatus('📥 Настройки импортированы', 'success');
-                }, 100);
                 
             } catch (error) {
                 console.error('Ошибка при импорте настроек:', error);
@@ -2717,16 +2669,37 @@ class ChatEditor {
     
     // Метод для создания градиента
     createGradient(gradientType, color1, color2, direction) {
+        console.log('Preview creating gradient:', { gradientType, color1, color2, direction });
+        
+        let result;
         switch (gradientType) {
             case 'linear':
-                return `linear-gradient(${direction}, ${color1}, ${color2})`;
+                // Используем только градусы для лучшей совместимости с OBS
+                let angle = 90; // по умолчанию
+                if (direction === 'to right') angle = 90;
+                else if (direction === 'to left') angle = 270;
+                else if (direction === 'to bottom') angle = 180;
+                else if (direction === 'to top') angle = 0;
+                else if (direction === 'to bottom right') angle = 135;
+                else if (direction === 'to bottom left') angle = 225;
+                else if (direction === 'to top right') angle = 45;
+                else if (direction === 'to top left') angle = 315;
+                
+                result = `linear-gradient(${angle}deg, ${color1}, ${color2})`;
+                break;
             case 'radial':
-                return `radial-gradient(circle, ${color1}, ${color2})`;
+                result = `radial-gradient(circle, ${color1}, ${color2})`;
+                break;
             case 'conic':
-                return `conic-gradient(from 0deg, ${color1}, ${color2})`;
+                // Conic градиенты для современных браузеров
+                result = `conic-gradient(from 0deg, ${color1}, ${color2})`;
+                break;
             default:
-                return color1;
+                result = color1;
         }
+        
+        console.log('Preview gradient result:', result);
+        return result;
     }
     
     // Подключение предпросмотра к реальному чату
@@ -2808,6 +2781,453 @@ class ChatEditor {
             this.showStatus('❌ Ошибка отключения: ' + error.message, 'error');
         }
     }
+    
+    // Обновление статуса предпросмотра
+    updatePreviewStatus(status, text) {
+        this.elements.previewStatus.textContent = text;
+        this.elements.previewStatus.className = 'preview-status ' + status;
+    }
+
+    syncPreviewMessageCount() {
+        const actualCount = this.elements.previewChatMessages.querySelectorAll('.preview-message').length;
+        this.previewMessageCount = actualCount;
+    }
+
+    limitPreviewMessages() {
+        if (!this.elements.previewChatMessages) return;
+        
+        const messages = this.elements.previewChatMessages.querySelectorAll('.preview-message');
+        const maxMessages = 8; // Максимальное количество видимых сообщений
+        
+        if (messages.length > maxMessages) {
+            // Удаляем самые старые сообщения
+            for (let i = 0; i < messages.length - maxMessages; i++) {
+                messages[i].remove();
+            }
+            this.syncPreviewMessageCount();
+        }
+    }
+
+    updateExistingPreviewMessages() {
+        const messagesContainer = this.elements.previewChatMessages;
+        if (!messagesContainer) return;
+        
+        const messages = messagesContainer.querySelectorAll('.preview-message');
+        messages.forEach(message => {
+            // Обновляем настройки шрифтов для каждого сообщения
+            message.style.fontFamily = this.settings.fontFamily;
+            message.style.fontSize = this.settings.fontSize + 'px';
+            message.style.fontWeight = this.settings.fontWeight;
+            message.style.lineHeight = this.settings.lineHeight;
+            message.style.letterSpacing = this.settings.letterSpacing + 'px';
+            message.style.color = this.settings.fontColor;
+            
+            // Обновляем выравнивание сообщения
+            message.className = message.className.replace(/align-\w+/g, '');
+            message.classList.add(`align-${this.settings.messageAlignment}`);
+            
+            // Обновляем режим рамки
+            message.classList.remove('border-full-width', 'border-fit-content');
+            if (this.settings.borderMode === 'full-width') {
+                message.classList.add('border-full-width');
+            } else {
+                message.classList.add('border-fit-content');
+            }
+            
+            // Обновляем выравнивание рамки
+            message.className = message.className.replace(/border-align-\w+/g, '');
+            message.classList.add(`border-align-${this.settings.borderAlignment}`);
+            
+            // Обновляем фон сообщения
+            this.applyMessageBackground(message);
+        });
+    }
+
+    getDefaultUserColor(username) {
+        // Генерируем цвет на основе имени пользователя
+        const colors = [
+            '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
+            '#FFA500', '#800080', '#FFC0CB', '#A52A2A', '#808080', '#000000'
+        ];
+        
+        let hash = 0;
+        for (let i = 0; i < username.length; i++) {
+            hash = username.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        
+        return colors[Math.abs(hash) % colors.length];
+    }
+
+    createUserBadges(userData, username) {
+        let badges = '';
+        
+        // Проверяем, нужно ли показывать значки пользователей
+        if (!this.settings.showUserBadges) {
+            return badges;
+        }
+        
+        const badgeElements = [];
+        
+        // Обработка Twitch бейджей из IRC тегов (новая система)
+        if (typeof(userData.badges) === 'string') {
+            console.log('🏷️ Preview processing user badges:', userData.badges);
+            
+            userData.badges.split(',').forEach(badge => {
+                const [badgeType, badgeVersion] = badge.split('/');
+                console.log('🏷️ Preview processing badge:', badgeType, badgeVersion);
+                
+                // Используем новую систему бейджей
+                const badgeKey = `${badgeType}/${badgeVersion}`;
+                if (this.badges && this.badges[badgeKey]) {
+                    const badgeData = this.badges[badgeKey];
+                    badgeElements.push(`<img class="badge" src="${badgeData.image}" alt="${badgeData.title}" title="${badgeData.description}" />`);
+                    console.log('✅ Preview badge found in cache:', badgeKey);
+                } else {
+                    // Fallback на базовые ролевые значки для канала
+                    const fallbackBadge = this.getFallbackBadge(badgeType);
+                    if (fallbackBadge) {
+                        badgeElements.push(fallbackBadge);
+                        console.log('🔄 Preview using fallback badge for role:', badgeType);
+                    } else {
+                        // Fallback на старую систему
+                        this.loadBadgeDirectly(badgeType, badgeVersion, badgeElements);
+                    }
+                }
+            });
+        }
+        
+        // Добавляем пользовательские бейджи (BTTV, Chatterino)
+        if (this.userBadges && this.userBadges[username]) {
+            this.userBadges[username].forEach(badge => {
+                let badgeHtml = `<img class="badge" src="${badge.url}" alt="${badge.description}" title="${badge.description}"`;
+                if (badge.color) {
+                    badgeHtml += ` style="background-color: ${badge.color};"`;
+                }
+                badgeHtml += ' />';
+                badgeElements.push(badgeHtml);
+            });
+        }
+        
+        return badgeElements.join('');
+    }
+
+    getFallbackBadge(badgeType) {
+        // Используем настоящие значки Twitch (только нужные)
+        const badgeUrls = {
+            'broadcaster': 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/2',
+            'moderator': 'https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1',
+            'vip': 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1',
+            'subscriber': 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/1'
+        };
+        
+        const badgeTitles = {
+            'broadcaster': 'Стример',
+            'moderator': 'Модератор',
+            'vip': 'VIP',
+            'subscriber': 'Подписчик'
+        };
+        
+        const badgeUrl = badgeUrls[badgeType];
+        if (badgeUrl) {
+            return `<img src="${badgeUrl}" class="badge ${badgeType}" alt="${badgeType}" title="${badgeTitles[badgeType]}" style="width: 1em; height: 1em;" />`;
+        }
+        
+        return ''; // Если значка нет - ничего не показываем
+    }
+
+    // Обрабатываем эмодзи по образцу jChat v2
+    processEmotes(text, userData = {}) {
+        if (!text) return text;
+        
+        let message = text;
+        let replacements = {};
+        
+        // Обработка Twitch эмодзи из IRC тегов
+        if (typeof(userData.emotes) === 'string') {
+            userData.emotes.split('/').forEach(emoteData => {
+                const twitchEmote = emoteData.split(':');
+                const indexes = twitchEmote[1].split(',')[0].split('-');
+                const emojis = new RegExp('[\u1000-\uFFFF]+', 'g');
+                const aux = message.replace(emojis, ' ');
+                const emoteCode = aux.substr(indexes[0], indexes[1] - indexes[0] + 1);
+                replacements[emoteCode] = '<img class="emote" src="https://static-cdn.jtvnw.net/emoticons/v2/' + twitchEmote[0] + '/default/dark/3.0" />';
+            });
+        }
+        
+        // Обработка эмодзи из всех источников (BTTV, 7TV, FFZ)
+        if (this.emotes) {
+            Object.entries(this.emotes).forEach(emote => {
+                if (message.search(this.escapeRegExp(emote[0])) > -1) {
+                    let emoteClass = 'emote';
+                    let emoteAttributes = '';
+                    
+                    // Добавляем класс источника эмодзи
+                    if (emote[1].source) {
+                        emoteClass += ` emote-${emote[1].source}`;
+                    }
+                    
+                    // Обработка zero-width эмодзи
+                    if (emote[1].zeroWidth) {
+                        emoteAttributes += ' data-zw="true"';
+                    }
+                    
+                    // Обработка upscale эмодзи (для BTTV)
+                    if (emote[1].upscale) {
+                        emoteClass += ' upscale';
+                    }
+                    
+                    replacements[emote[0]] = `<img class="${emoteClass}" src="${emote[1].image}"${emoteAttributes} />`;
+                }
+            });
+        }
+        
+        // Обработка Bits/Cheers
+        if (userData.bits && parseInt(userData.bits) > 0) {
+            const bits = parseInt(userData.bits);
+            let parsed = false;
+            
+            if (this.cheers) {
+                for (const cheerType of Object.entries(this.cheers)) {
+                    const regex = new RegExp(cheerType[0] + "\\d+\\s*", 'ig');
+                    if (message.search(regex) > -1) {
+                        message = message.replace(regex, '');
+                        
+                        if (!parsed) {
+                            let closest = 1;
+                            for (const cheerTier of Object.keys(cheerType[1]).map(Number).sort((a, b) => a - b)) {
+                                if (bits >= cheerTier) closest = cheerTier;
+                                else break;
+                            }
+                            message = '<img class="cheer_emote" src="' + cheerType[1][closest].image + '" /><span class="cheer_bits" style="color: ' + cheerType[1][closest].color + ';">' + bits + '</span> ' + message;
+                            parsed = true;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Экранируем HTML
+        message = this.escapeHtml(message);
+        
+        // Заменяем эмодзи
+        const replacementKeys = Object.keys(replacements);
+        replacementKeys.sort(function(a, b) {
+            return b.length - a.length;
+        });
+        
+        replacementKeys.forEach(replacementKey => {
+            const regex = new RegExp("(?<!\\S)(" + this.escapeRegExp(replacementKey) + ")(?!\\S)", 'g');
+            message = message.replace(regex, replacements[replacementKey]);
+        });
+        
+        // Обработка эмодзи (если доступна библиотека twemoji)
+        if (typeof twemoji !== 'undefined') {
+            message = twemoji.parse(message);
+        }
+        
+        return message;
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Экранируем специальные символы для регулярных выражений
+    escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    getChannelAvatar(channelName) {
+        // Возвращаем простую иконку канала для предпросмотра
+        return `<span class="channel-avatar" title="Канал: ${channelName}">📺</span>`;
+    }
+
+    loadBadgeDirectly(badgeType, badgeVersion, badgeElements) {
+        // Простая загрузка бейджа для предпросмотра
+        const fallbackBadge = this.getFallbackBadge(badgeType);
+        if (fallbackBadge) {
+            badgeElements.push(fallbackBadge);
+        }
+    }
+
+    async addDemoMessages() {
+        const messagesContainer = this.elements.previewChatMessages;
+        
+        if (!messagesContainer) {
+            console.error('previewChatMessages element not found!');
+            return;
+        }
+        
+        // Полная очистка предпросмотра
+        this.clearPreviewMessages();
+        
+        // Добавляем демо-сообщения с метаданными
+        const demoMessages = [
+            { 
+                username: 'Streamer', 
+                text: 'Привет всем! Как дела?', 
+                userData: { 
+                    color: '#ff6b6b', 
+                    badges: ['broadcaster/1']
+                } 
+            },
+            { 
+                username: 'Moderator', 
+                text: 'Соблюдайте правила чата!', 
+                userData: { 
+                    color: '#4CAF50', 
+                    badges: ['moderator/1']
+                } 
+            },
+            { 
+                username: 'VIPUser', 
+                text: 'Отличный контент!', 
+                userData: { 
+                    color: '#FF9800', 
+                    badges: ['vip/1']
+                } 
+            },
+            { 
+                username: 'Subscriber', 
+                text: 'Подписался на 6 месяцев!', 
+                userData: { 
+                    color: '#9C27B0', 
+                    badges: ['subscriber/6']
+                } 
+            },
+            { 
+                username: 'MultiBadgeUser', 
+                text: 'У меня несколько бейджиков! 🎉', 
+                userData: { 
+                    color: '#FF9800',
+                    badges: ['moderator/1', 'vip/1', 'subscriber/1']
+                } 
+            },
+            { 
+                username: 'PrimeUser', 
+                text: 'Привет всем! 👋', 
+                userData: { 
+                    color: '#00BCD4',
+                    badges: ['premium/1']
+                } 
+            },
+            { 
+                username: 'BitsDonator', 
+                text: 'GG! 🎮', 
+                userData: { 
+                    color: '#FF5722',
+                    badges: ['bits/1000']
+                } 
+            },
+            { 
+                username: 'GiftLeader', 
+                text: 'Это очень длинное сообщение для демонстрации того, как работает перенос текста в чате. Оно должно корректно отображаться на нескольких строках!', 
+                userData: { 
+                    color: '#E91E63',
+                    badges: ['sub-gift-leader/1']
+                } 
+            }
+        ];
+        
+        demoMessages.forEach((msg, index) => {
+            const delay = this.settings.staggerAnimations ? 
+                index * this.settings.staggerDelay : 
+                index * 300;
+            
+            setTimeout(() => {
+                this.addPreviewMessage(msg.username, msg.text, msg.userData);
+            }, delay);
+        });
+    }
+    
+    // Применение настроек сообщения для предпросмотра
+    applyPreviewMessageSettings(messageElement) {
+        // Применяем настройки фона сообщения
+        if (window.twitchChat) {
+            window.twitchChat.applyMessageBackground(messageElement);
+        }
+        
+        // Применяем выравнивание сообщений
+        messageElement.classList.add(`align-${this.settings.messageAlignment}`);
+        
+        // Применяем режим рамки
+        if (this.settings.borderMode === 'full-width') {
+            messageElement.classList.add('border-full-width');
+        } else {
+            messageElement.classList.add('border-fit-content');
+        }
+        
+        // Применяем выравнивание рамки
+        messageElement.classList.add(`border-align-${this.settings.borderAlignment}`);
+        
+        // Применяем настройки шрифтов
+        messageElement.style.fontFamily = this.settings.fontFamily;
+        messageElement.style.fontSize = this.settings.fontSize + 'px';
+        messageElement.style.fontWeight = this.settings.fontWeight;
+        messageElement.style.lineHeight = this.settings.lineHeight;
+        messageElement.style.letterSpacing = this.settings.letterSpacing + 'px';
+        messageElement.style.color = this.settings.fontColor;
+    }
+    
+    // Применение анимаций для предпросмотра
+    applyPreviewAnimations(messageElement) {
+        // Применяем анимацию если выбрана
+        if (this.settings.appearAnimation !== 'none') {
+            const animationName = this.getAnimationName(this.settings.appearAnimation);
+            const animationDuration = `${this.settings.appearDuration}ms`;
+            const animationDelay = this.settings.appearDelay > 0 ? `${this.settings.appearDelay}ms` : '0ms';
+            
+            // Сбрасываем все стили анимации
+            messageElement.style.animation = '';
+            messageElement.style.animationName = '';
+            messageElement.style.animationDuration = '';
+            messageElement.style.animationDelay = '';
+            messageElement.style.animationFillMode = '';
+            messageElement.style.animationTimingFunction = '';
+            
+            // Устанавливаем начальное состояние для анимации
+            messageElement.style.opacity = '0';
+            messageElement.style.transform = this.getInitialTransform(this.settings.appearAnimation);
+            
+            // Применяем анимацию появления
+            messageElement.style.animation = `${animationName} ${animationDuration} ease-out ${animationDelay} forwards`;
+            
+            // Fallback: если анимация не сработает, показываем элемент через некоторое время
+            setTimeout(() => {
+                if (messageElement.style.opacity === '0' || getComputedStyle(messageElement).opacity === '0') {
+                    messageElement.style.opacity = '1';
+                    messageElement.style.transform = 'translateX(0)';
+                    messageElement.style.animation = '';
+                }
+            }, this.settings.appearDuration + this.settings.appearDelay + 100);
+        } else {
+            // Если анимация отключена или выбрана "Нет", просто показываем элемент
+            messageElement.style.opacity = '1';
+            messageElement.style.transform = 'translateX(0)';
+        }
+    }
+    
+    
+    // Синхронизация настроек с чатом предпросмотра
+    syncSettingsWithPreviewChat() {
+        if (this.previewChatInstance) {
+            // Применяем настройки к чату предпросмотра
+            this.previewChatInstance.settings = { ...this.settings };
+            this.previewChatInstance.applySettings();
+            console.log('Настройки синхронизированы с чатом предпросмотра');
+        }
+        
+        // Также применяем настройки к предпросмотру напрямую
+        this.applyPreviewSettings();
+        console.log('Настройки применены к предпросмотру напрямую');
+        
+        // Принудительно обновляем все существующие сообщения
+        this.updateExistingPreviewMessages();
+        console.log('Все существующие сообщения обновлены');
+    }
+    
     
     // Обновление статуса предпросмотра
     updatePreviewStatus(status, text) {

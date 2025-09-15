@@ -525,12 +525,12 @@ body {
 }
 
 .badge {
-    width: 1.2em;
-    height: 1.2em;
-    margin-right: 0 !important;
+    width: 1em;
+    height: 1em;
+    margin-right: 2px;
     display: inline-block;
-    vertical-align: baseline;
-    transform: translateY(1px);
+    vertical-align: middle;
+    border-radius: 10%;
     object-fit: contain;
     flex-shrink: 0;
 }
@@ -580,11 +580,25 @@ body {
     vertical-align: middle;
 }
 
-/* Стили для эмодзи (7TV, BTTV, FFZ) */
-.emote {
-    height: 1.2em;
+.channel-avatar {
+    width: 1em;
+    height: 1em;
+    border-radius: 50%;
     vertical-align: middle;
-    margin: 0 0.1em;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+    margin-right: 2px;
+    object-fit: cover;
+}
+
+/* Стили для эмодзи (7TV, BTTV, FFZ) */
+.emote, img.emote, .chat-message .emote, .chat-message img.emote, 
+.chat-container .emote, .chat-container img.emote, 
+#chat-messages .emote, #chat-messages img.emote,
+body .emote, body img.emote, html body .emote, html body img.emote {
+    height: 1em !important;
+    vertical-align: middle;
+    margin: 0 !important;
     display: inline-block;
     object-fit: contain;
     flex-shrink: 0;
@@ -932,18 +946,12 @@ img.emoji {
 }
 
 /* Стили для эмодзи и бейджей из jChat */
-.badge {
-    vertical-align: middle;
-    border-radius: 10%;
-    width: 1em;
-    height: 1em;
-    margin-right: 0 !important;
-}
 
-.emote {
+.emote, .chat-message .emote {
     vertical-align: middle;
-    height: 1.2em;
-    max-height: 1.2em;
+    height: 1em !important;
+    max-height: 1em !important;
+    margin: 0 !important;
 }
 
 .emote.upscale {
@@ -952,10 +960,11 @@ img.emoji {
     image-rendering: crisp-edges;
 }
 
-.cheer_emote {
+.cheer_emote, .chat-message .cheer_emote {
     vertical-align: middle;
-    height: 1.2em;
-    max-height: 1.2em;
+    height: 1em !important;
+    max-height: 1em !important;
+    margin: 0 !important;
 }
 
 .cheer_bits {

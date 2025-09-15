@@ -720,23 +720,6 @@ body {
     box-shadow: 0 3px 10px rgba(244, 67, 54, 0.3);
 }
 
-.test-btn {
-    padding: 8px 15px;
-    background: linear-gradient(45deg, #2196F3, #1976D2);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 0.9em;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-}
-
-.test-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 3px 10px rgba(33, 150, 243, 0.3);
-}
 
 .background-preview-container {
     display: flex;
@@ -878,14 +861,37 @@ body {
     font-size: 14px;
     margin-left: auto;
     font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
 }
 
 .preview-status.connected {
     color: #10b981;
+    background: rgba(16, 185, 129, 0.2);
 }
 
 .preview-status.connecting {
     color: #f59e0b;
+    background: rgba(245, 158, 11, 0.2);
+    animation: pulse 1.5s infinite;
+}
+
+.preview-status.error {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.preview-status.disconnected {
+    color: #6b7280;
+    background: rgba(107, 114, 128, 0.2);
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
 }
 
 .preview-panel h3 {
@@ -895,6 +901,29 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+/* Стили для основного чата (скрытого) */
+.main-chat {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.main-chat .chat-container {
+    width: 100%;
+    height: 100%;
+}
+
+.main-chat .chat-messages {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 10px;
+    background: transparent;
 }
 
 .preview-container {
@@ -923,26 +952,149 @@ body {
     /* Размеры будут устанавливаться динамически через JavaScript */
 }
 
+/* Стили для предпросмотра чата наследуются из style.css */
+
+/* Стили для информации OBS */
+.obs-info {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 100%;
+    max-width: 500px;
+}
+
+.obs-info h4 {
+    margin: 0 0 10px 0;
+    color: #9146ff;
+    font-size: 1.1em;
+    text-align: center;
+}
+
+.obs-info p {
+    margin: 8px 0;
+    color: #ccc;
+    font-size: 0.9em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.obs-info strong {
+    color: white;
+    font-weight: bold;
+    background: rgba(145, 70, 255, 0.2);
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.obs-info a {
+    color: #9146ff;
+    text-decoration: none;
+    background: rgba(145, 70, 255, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(145, 70, 255, 0.3);
+    word-break: break-all;
+    font-size: 0.8em;
+    max-width: 70%;
+}
+
+.obs-info a:hover {
+    background: rgba(145, 70, 255, 0.2);
+    border-color: #9146ff;
+}
+
+.obs-info .copy-btn,
+.obs-info .refresh-btn {
+    margin: 5px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #9146ff, #ff6b6b);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.obs-info .copy-btn:hover,
+.obs-info .refresh-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(145, 70, 255, 0.4);
+}
+
+.open-chat-btn {
+    background: linear-gradient(135deg, #9146ff, #7c3aed);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-block;
+    box-shadow: 0 4px 15px rgba(145, 70, 255, 0.3);
+}
+
+.open-chat-btn:hover {
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(145, 70, 255, 0.4);
+}
+
+.obs-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.obs-info .refresh-btn {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+}
+
+.obs-info .refresh-btn:hover {
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+/* ===== СТИЛИ ДЛЯ ПРЕДПРОСМОТРА ЧАТА ===== */
+
+/* CSS переменные для предпросмотра */
+.preview-chat-container {
+    --primary-color: #9146ff;
+    --secondary-color: #ff6b6b;
+    --background-color: rgba(255, 255, 255, 0.05);
+    --text-color: #ffffff;
+    --border-color: #9146ff;
+    --badge-size: 16px;
+    --badge-spacing: 2px;
+}
+
+/* Контейнер предпросмотра чата */
 .preview-chat-container {
     width: 100%;
-    height: 100%;
-    background: transparent;
+    min-width: 300px;
+    min-height: 200px;
+    background: var(--fallback-bg, transparent);
     backdrop-filter: none;
     border: 3px solid #9146ff;
     border-radius: 10px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transition: all 0.3s ease;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    position: relative;
 }
 
 .preview-chat-container.no-border {
     border: none;
-    box-shadow: none;
 }
 
 .preview-chat-container.no-background {
@@ -962,56 +1114,465 @@ body {
     border-radius: inherit;
 }
 
-
-
-.preview-chat-messages {
+/* Контейнер сообщений предпросмотра */
+#preview-chat-messages {
     flex: 1;
-    padding: 8px;
-    overflow: hidden;
-    background: transparent;
+    padding: 20px;
+    overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
+    background: transparent;
     justify-content: flex-end;
-    min-height: 120px;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
 }
 
-/* Направление чата в предпросмотре */
-.preview-chat-messages.direction-top-to-bottom {
+/* Скрываем полосы прокрутки в WebKit браузерах */
+#preview-chat-messages::-webkit-scrollbar {
+    display: none;
+}
+
+/* Направление чата */
+#preview-chat-messages.direction-top-to-bottom {
     justify-content: flex-start;
 }
 
-.preview-chat-messages.direction-bottom-to-top {
+#preview-chat-messages.direction-bottom-to-top {
     justify-content: flex-end;
 }
 
+/* Сообщения предпросмотра */
 .preview-message {
-    margin-bottom: 2px;
-    padding: 4px 4px;
+    margin-bottom: 3px;
+    padding: 4px 8px;
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
+    border-radius: 8px;
     word-wrap: break-word;
     word-break: break-word;
     white-space: pre-wrap;
-    font-size: 0.85em;
-    opacity: 0;
-    transform: translateX(-50px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
+    opacity: 1;
+    transform: translateX(0);
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+    hyphens: auto;
 }
 
 /* Класс для сообщений без анимации */
 .preview-message.no-animation {
     opacity: 1 !important;
     transform: translateX(0) !important;
+    line-height: 1.2;
     background-size: cover, cover;
     background-position: center, center;
     background-repeat: no-repeat, no-repeat;
-    line-height: 1.2;
     position: relative;
 }
 
-/* Старые классы анимаций исчезновения удалены - используем новые keyframes */
+/* Элементы сообщений предпросмотра */
+.preview-message .username {
+    color: #9146ff;
+    font-weight: bold;
+    margin-right: 0 !important;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 1px;
+}
 
-/* Keyframes для анимаций исчезновения в предпросмотре */
+.preview-message .badge {
+    width: 1em;
+    height: 1em;
+    margin-right: 2px;
+    display: inline-block;
+    vertical-align: middle;
+    border-radius: 10%;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.preview-message .badge.broadcaster {
+    color: #ff6b6b;
+}
+
+.preview-message .badge.mod {
+    color: #4CAF50;
+}
+
+.preview-message .badge.vip {
+    color: #FF9800;
+}
+
+.preview-message .badge.subscriber {
+    color: #9C27B0;
+}
+
+.preview-message .badge.turbo {
+    color: #00BCD4;
+}
+
+.preview-message .badge.prime {
+    color: #9C27B0;
+}
+
+.preview-message .badge.bits {
+    color: #FFD700;
+}
+
+.preview-message .badge.gift-leader {
+    color: #FF5722;
+}
+
+.preview-message .badge.gifter {
+    color: #FF5722;
+}
+
+/* Стили для значка канала */
+.preview-message .channel-badge {
+    display: inline-block;
+    margin-right: 4px;
+    font-size: 0.8em;
+    opacity: 0.7;
+    vertical-align: middle;
+}
+
+.preview-message .channel-avatar {
+    width: 1em;
+    height: 1em;
+    border-radius: 50%;
+    vertical-align: middle;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+    margin-right: 2px;
+    object-fit: cover;
+}
+
+/* Стили для эмодзи (7TV, BTTV, FFZ) */
+.preview-message .emote, .preview-message img.emote, 
+.preview-chat-container .emote, .preview-chat-container img.emote, 
+#preview-chat-messages .emote, #preview-chat-messages img.emote {
+    height: 1em !important;
+    vertical-align: middle;
+    margin: 0 !important;
+    display: inline-block;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+/* Стили для эмодзи из разных источников */
+.preview-message .emote-bttv {
+    opacity: 1;
+}
+
+.preview-message .emote-7tv {
+    opacity: 1;
+}
+
+.preview-message .emote-ffz {
+    opacity: 1;
+}
+
+/* Zero-width эмодзи */
+.preview-message .emote[data-zw="true"] {
+    position: absolute;
+    z-index: 1;
+}
+
+/* Upscale эмодзи */
+.preview-message .emote.upscale {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+.preview-message .text {
+    color: inherit;
+    line-height: 1.2;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+/* Стили для длинных URL */
+.preview-message .text a {
+    word-break: break-all;
+    overflow-wrap: break-word;
+}
+
+/* Стили для стандартных эмодзи (смайликов) */
+.preview-message img.emoji {
+    height: 0.8em !important;
+    width: 0.8em !important;
+    margin: 0 0.1em !important;
+    vertical-align: middle !important;
+    display: inline-block !important;
+    object-fit: contain !important;
+}
+
+/* Стили для эмодзи и бейджей из jChat */
+.preview-message .emote {
+    vertical-align: middle;
+    height: 1em !important;
+    max-height: 1em !important;
+    margin: 0 !important;
+}
+
+.preview-message .emote.upscale {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+.preview-message .cheer_emote {
+    vertical-align: middle;
+    height: 1em !important;
+    max-height: 1em !important;
+    margin: 0 !important;
+}
+
+.preview-message .cheer_bits {
+    color: rgb(189, 98, 255);
+    font-size: 0.6em;
+    -webkit-text-stroke: 1px black;
+    font-weight: bold;
+}
+
+.preview-message .emoji {
+    vertical-align: middle;
+}
+
+.preview-message .zero-width_container {
+    display: inline-block;
+    position: relative;
+}
+
+.preview-message .zero-width {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* Настройки выравнивания сообщений */
+#preview-chat-messages.align-left .preview-message {
+    text-align: left;
+}
+
+#preview-chat-messages.align-center .preview-message {
+    text-align: center;
+}
+
+#preview-chat-messages.align-right .preview-message {
+    text-align: right;
+}
+
+#preview-chat-messages.align-justify .preview-message {
+    text-align: justify;
+}
+
+/* Режимы рамки сообщений */
+.preview-message.border-fit-content {
+    display: inline-block;
+    width: auto;
+    max-width: calc(100% - 16px);
+    box-sizing: border-box;
+    margin-bottom: 8px;
+    min-width: 0;
+}
+
+.preview-message.border-full-width {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 4px;
+    min-width: 0;
+}
+
+/* Выравнивание рамок работает только в режиме fit-content */
+#preview-chat-messages.border-fit-content.border-align-left .preview-message {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+#preview-chat-messages.border-fit-content.border-align-center .preview-message {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#preview-chat-messages.border-fit-content.border-align-right .preview-message {
+    margin-left: auto;
+    margin-right: 0;
+}
+
+/* Режимы рамки для контейнера сообщений */
+#preview-chat-messages.border-fit-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+#preview-chat-messages.border-full-width {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+/* Центрирование сообщений */
+#preview-chat-messages.centered {
+    align-items: center;
+}
+
+.preview-message.centered {
+    text-align: center;
+    max-width: 80%;
+}
+
+/* Анимации появления сообщений */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(-180deg);
+        opacity: 0;
+    }
+    to {
+        transform: rotate(0deg);
+        opacity: 1;
+    }
+}
+
+@keyframes flip {
+    from {
+        transform: perspective(400px) rotateY(-90deg);
+        opacity: 0;
+    }
+    to {
+        transform: perspective(400px) rotateY(0deg);
+        opacity: 1;
+    }
+}
+
+@keyframes zoom {
+    from {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes elastic {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes back {
+    0% {
+        transform: translateX(-100px) scale(0.8);
+        opacity: 0;
+    }
+    50% {
+        transform: translateX(20px) scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+}
+
+/* Анимации исчезновения */
 @keyframes fadeOut {
     from {
         opacity: 1;
@@ -1139,246 +1700,129 @@ body {
     }
 }
 
-/* Все анимации появления применяются через JavaScript напрямую к style.animation */
-
-/* Старые классы анимаций исчезновения удалены - используем новые keyframes */
-
-/* Анимации исчезновения применяются через JavaScript напрямую к style.animation */
-
-/* Центрирование для предпросмотра */
-.preview-chat-messages.centered {
-    align-items: center;
+/* Анимации исчезновения для предпросмотра */
+.preview-message.fade-out {
+    opacity: 0;
+    transform: translateX(-20px);
 }
 
-.preview-message.centered {
-    text-align: center;
-    max-width: 80%;
+.preview-message.slide-out-left {
+    opacity: 0;
+    transform: translateX(-100px);
 }
 
-/* Анимации появления применяются через JavaScript напрямую к style.animation */
-
-/* Стили для информации OBS */
-.obs-info {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    padding: 15px;
-    margin-top: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    width: 100%;
-    max-width: 500px;
+.preview-message.slide-out-right {
+    opacity: 0;
+    transform: translateX(100px);
 }
 
-.obs-info h4 {
-    margin: 0 0 10px 0;
-    color: #9146ff;
-    font-size: 1.1em;
-    text-align: center;
+.preview-message.slide-out-up {
+    opacity: 0;
+    transform: translateY(-50px);
 }
 
-.obs-info p {
-    margin: 8px 0;
-    color: #ccc;
-    font-size: 0.9em;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.preview-message.scale-out {
+    opacity: 0;
+    transform: scale(0.5);
 }
 
-.obs-info strong {
-    color: white;
-    font-weight: bold;
-    background: rgba(145, 70, 255, 0.2);
-    padding: 4px 8px;
-    border-radius: 4px;
+/* Fallback для градиентов в OBS */
+.preview-chat-container {
+    background: var(--fallback-bg, var(--gradient-color-1, transparent));
+    position: relative;
+    overflow: hidden;
 }
 
-.obs-info a {
-    color: #9146ff;
-    text-decoration: none;
-    background: rgba(145, 70, 255, 0.1);
-    padding: 4px 8px;
-    border-radius: 4px;
-    border: 1px solid rgba(145, 70, 255, 0.3);
-    word-break: break-all;
-    font-size: 0.8em;
-    max-width: 70%;
+.preview-chat-container[style*="gradient"] {
+    background: var(--fallback-bg, var(--gradient-color-1, transparent)) !important;
 }
 
-.obs-info a:hover {
-    background: rgba(145, 70, 255, 0.2);
-    border-color: #9146ff;
+.preview-message {
+    background: var(--message-fallback-bg, var(--message-gradient-color-1, transparent));
+    position: relative;
+    overflow: hidden;
 }
 
-.obs-info .copy-btn,
-.obs-info .refresh-btn {
-    margin: 5px;
-    padding: 8px 16px;
-    background: linear-gradient(135deg, #9146ff, #ff6b6b);
-    border: none;
-    border-radius: 6px;
-    color: white;
-    cursor: pointer;
-    font-size: 0.9em;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    display: inline-block;
+.preview-message[style*="gradient"] {
+    background: var(--message-fallback-bg, var(--message-gradient-color-1, transparent)) !important;
 }
 
-.obs-info .copy-btn:hover,
-.obs-info .refresh-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(145, 70, 255, 0.4);
+/* Дополнительные стили для лучшей совместимости с OBS */
+.preview-chat-container,
+.preview-message {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    will-change: auto;
 }
 
-.open-chat-btn {
-    background: linear-gradient(135deg, #9146ff, #7c3aed);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-block;
-    box-shadow: 0 4px 15px rgba(145, 70, 255, 0.3);
+/* Fallback стили для градиентов сообщений */
+.preview-message {
+    background-color: var(--message-fallback-bg, #1a1a1a);
+    background-image: var(--message-gradient, none);
 }
 
-.open-chat-btn:hover {
-    background: linear-gradient(135deg, #7c3aed, #6d28d9);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(145, 70, 255, 0.4);
+/* Поддержка conic градиентов для современных браузеров */
+@supports (background: conic-gradient(from 0deg, red, blue)) {
+    .preview-message {
+        background: var(--message-gradient, none);
+    }
 }
 
-.obs-buttons {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 10px;
+/* Fallback для OBS и старых браузеров */
+.preview-message[style*="conic-gradient"] {
+    background: linear-gradient(45deg, var(--message-gradient-color-1, #1a1a1a), var(--message-gradient-color-2, #2a2a2a)) !important;
 }
 
-.obs-info .refresh-btn {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
+/* Дополнительные стили для лучшей поддержки градиентов */
+.preview-message {
+    background-attachment: fixed;
+    background-repeat: no-repeat;
 }
 
-.obs-info .refresh-btn:hover {
-    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+/* Специальные стили для conic градиентов */
+@supports (background: conic-gradient(from 0deg, red, blue)) {
+    .preview-message[style*="conic-gradient"] {
+        background-attachment: scroll;
+    }
 }
 
-.preview-message .username {
-    color: #9146ff;
-    font-weight: bold;
-    margin-right: 0 !important;
-    display: inline-flex;
-    align-items: baseline;
-    gap: 1px;
+/* Дополнительные стили для градиентов сообщений */
+.preview-message[style*="linear-gradient"],
+.preview-message[style*="radial-gradient"],
+.preview-message[style*="conic-gradient"] {
+    background-attachment: scroll !important;
+    background-repeat: no-repeat !important;
+    background-size: cover !important;
 }
 
-.preview-message .badge {
-    width: 1.2em;
-    height: 1.2em;
-    margin-right: 0 !important;
-    display: inline-block;
-    vertical-align: baseline;
-    transform: translateY(1px);
-    object-fit: contain;
-    flex-shrink: 0;
+/* Специфичные стили для градиентов фона чата */
+.preview-chat-container[style*="linear-gradient"],
+.preview-chat-container[style*="radial-gradient"],
+.preview-chat-container[style*="conic-gradient"] {
+    background-attachment: scroll !important;
+    background-repeat: no-repeat !important;
+    background-size: cover !important;
+    background-position: center !important;
 }
 
-/* Стили для эмодзи в предпросмотре (7TV, BTTV, FFZ) */
-.preview-message .emote {
-    height: 1.2em;
-    vertical-align: middle;
-    margin: 0 0.1em;
-    display: inline-block;
-    transition: all 0.2s ease;
-    object-fit: contain;
-    flex-shrink: 0;
+/* Принудительное применение градиентов */
+.preview-chat-container {
+    background-image: var(--gradient-image, none) !important;
 }
 
-.preview-message .emote:hover {
-    transform: scale(1.1);
-    filter: brightness(1.2);
-}
-
-.preview-message .text {
-    color: inherit;
-    line-height: 1.2;
-}
-
-/* Настройки выравнивания сообщений */
-.preview-chat-messages.align-left .preview-message {
-    text-align: left;
-}
-
-.preview-chat-messages.align-center .preview-message {
-    text-align: center;
-}
-
-.preview-chat-messages.align-right .preview-message {
-    text-align: right;
-}
-
-.preview-chat-messages.align-justify .preview-message {
-    text-align: justify;
-}
-
-/* Режимы рамки сообщений */
-.preview-message.border-fit-content {
-    display: block;
-    width: auto;
-    max-width: fit-content;
-    box-sizing: border-box;
-    margin-bottom: 8px;
-}
-
-.preview-message.border-full-width {
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-    margin-bottom: 4px;
-}
-
-/* Режимы рамки для контейнера сообщений */
-.preview-chat-messages.border-fit-content {
-    /* Контейнер остается flex, рамки подстраиваются под сообщения */
-    display: flex;
-    flex-direction: column;
-}
-
-.preview-chat-messages.border-full-width {
-    /* Контейнер остается flex, но сообщения растягиваются на всю ширину */
-    display: flex;
-    flex-direction: column;
-}
-
-/* Выравнивание рамок работает только в режиме fit-content */
-.preview-chat-messages.border-fit-content.border-align-left .preview-message {
-    margin-left: 0;
-    margin-right: auto;
-}
-
-.preview-chat-messages.border-fit-content.border-align-center .preview-message {
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.preview-chat-messages.border-fit-content.border-align-right .preview-message {
-    margin-left: auto;
-    margin-right: 0;
-}
-
-/* Специальные эффекты для Майнкрафт шрифтов в предпросмотре */
+/* Специальные эффекты для Майнкрафт шрифтов */
 .preview-message[style*="Press Start 2P"] .text,
 .preview-message[style*="Press Start 2P"] .username {
     text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.5);
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
-    animation: minecraft-glow-preview 2s ease-in-out infinite alternate;
+    animation: minecraft-glow 2s ease-in-out infinite alternate;
 }
 
-@keyframes minecraft-glow-preview {
+@keyframes minecraft-glow {
     0% {
         text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.5), 0 0 5px rgba(76, 175, 80, 0.3);
     }
@@ -1390,10 +1834,10 @@ body {
 .preview-message[style*="VT323"] .text,
 .preview-message[style*="VT323"] .username {
     text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.3);
-    animation: minecraft-pixel-flicker-preview 3s ease-in-out infinite;
+    animation: minecraft-pixel-flicker 3s ease-in-out infinite;
 }
 
-@keyframes minecraft-pixel-flicker-preview {
+@keyframes minecraft-pixel-flicker {
     0%, 100% {
         opacity: 1;
         text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.3);
@@ -1599,18 +2043,7 @@ body {
         min-height: 160px;
     }
     
-    .preview-message {
-        font-size: 0.8em;
-        padding: 3px 6px;
-        margin-bottom: 1px;
-    }
-    
-    .preview-message .badge {
-        width: 1.2em;
-        height: 1.2em;
-        margin-right: 0 !important;
-        transform: translateY(1px);
-    }
+    /* Стили для сообщений предпросмотра наследуются из style.css */
 }
 
 @media (max-width: 480px) {
@@ -1625,10 +2058,7 @@ body {
         min-height: 140px;
     }
     
-    .preview-message {
-        font-size: 0.75em;
-        padding: 2px 4px;
-    }
+    /* Стили для сообщений предпросмотра наследуются из style.css */
 }
 
 /* Стили для подсказок */

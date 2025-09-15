@@ -88,7 +88,6 @@
                     <div class="setting-item">
                         <label for="background-image">Фоновое изображение:</label>
                         <input type="url" id="background-image" placeholder="https://example.com/image.jpg">
-                        <button id="test-background" class="test-btn">🔍 Проверить</button>
                         <button id="clear-background" class="clear-btn">🗑️ Очистить</button>
                     </div>
                     
@@ -271,13 +270,11 @@
                     <div class="setting-item">
                         <label for="message-background-image-1">Фоновое изображение 1 (нижний слой):</label>
                         <input type="url" id="message-background-image-1" placeholder="https://example.com/image1.jpg">
-                        <button id="test-message-bg-1" class="test-btn">🔍 Проверить</button>
                         <button id="clear-message-bg-1" class="clear-btn">🗑️ Очистить</button>
                     </div>
                     <div class="setting-item">
                         <label for="message-background-image-2">Фоновое изображение 2 (верхний слой):</label>
                         <input type="url" id="message-background-image-2" placeholder="https://example.com/image2.jpg">
-                        <button id="test-message-bg-2" class="test-btn">🔍 Проверить</button>
                         <button id="clear-message-bg-2" class="clear-btn">🗑️ Очистить</button>
                     </div>
                     <div class="setting-item">
@@ -770,6 +767,7 @@
                         </div>
                     </div>
                 </div>
+                
                 <div class="obs-info">
                     <h4>📺 Информация для OBS</h4>
                     <p><strong>Размер для OBS:</strong> <span id="obs-size">800x600</span></p>
@@ -797,6 +795,8 @@
     
     <input type="file" id="import-file" accept=".json" style="display: none;">
     
+    <!-- Загружаем script.js перед editor.js для доступа к классу TwitchChat -->
+    <script src="script.js"></script>
     <script src="editor.js"></script>
 </body>
 </html>

@@ -94,8 +94,7 @@ class TwitchChat {
         
         // Проверяем, что элементы инициализированы
         if (!this.chatMessagesElement) {
-            console.error('chatMessagesElement не найден! Проверьте HTML структуру.');
-            return;
+            console.log('chatMessagesElement не найден, будет установлен позже');
         }
         
         this.loadSettings().then(() => {
@@ -383,6 +382,12 @@ class TwitchChat {
     }
     
     applySettings() {
+        // Проверяем, что элементы инициализированы
+        if (!this.chatContainer || !this.chatMessagesElement) {
+            console.log('Элементы чата не инициализированы, пропускаем applySettings');
+            return;
+        }
+        
         // Отладочная информация
         console.log('applySettings called with settings:', {
             backgroundGradient: this.settings.backgroundGradient,
@@ -714,7 +719,7 @@ class TwitchChat {
     
     async connectToChat() {
         if (!this.channel && this.channels.length === 0) {
-            this.showError('Название канала не указано');
+            console.log('⚠️ Канал не указан, подключение пропущено');
             return;
         }
         
@@ -1440,6 +1445,9 @@ class TwitchChat {
         if (userData.id) {
             messageElement.setAttribute('data-id', userData.id);
         }
+        if (userData.sourceChannel) {
+            messageElement.setAttribute('data-source-channel', userData.sourceChannel);
+        }
         
         // Применяем анимацию если выбрана
         if (this.settings.appearAnimation !== 'none') {
@@ -1511,10 +1519,12 @@ class TwitchChat {
         // Используем display-name если есть, иначе username
         const displayName = userData['display-name'] || username;
         
-        // Добавляем значок канала если сообщение не из основного канала
+        // Добавляем значок канала только если это общий чат (несколько каналов)
         let channelBadge = '';
-        if (userData.sourceChannel && userData.sourceChannel !== this.channel) {
-            channelBadge = `<span class="channel-badge" title="Канал: ${userData.sourceChannel}">📺</span>`;
+        if (this.channels.length > 1 && userData.sourceChannel && userData.sourceChannel !== this.channel) {
+            // Получаем аватарку канала
+            const channelAvatar = this.getChannelAvatar(userData.sourceChannel);
+            channelBadge = `<span class="channel-badge" title="Канал: ${userData.sourceChannel}">${channelAvatar}</span>`;
         }
         
         // Обрабатываем эмодзи в тексте сообщения
@@ -1943,7 +1953,7 @@ class TwitchChat {
             // Используем границы слов для точного совпадения
             const regex = new RegExp(`\\b${this.escapeRegExp(emoteName)}\\b`, 'g');
             if (regex.test(processedText)) {
-                const emoteHtml = `<img src="${emoteData.url}" class="emote" alt="${emoteData.name}" title="${emoteData.name}" style="height: 1.2em; vertical-align: middle;" />`;
+                const emoteHtml = `<img src="${emoteData.url}" class="emote" alt="${emoteData.name}" title="${emoteData.name}" />`;
                 processedText = processedText.replace(regex, emoteHtml);
             }
         }
@@ -1980,7 +1990,10 @@ class TwitchChat {
     
     showError(message) {
         console.error(message);
-        this.addSystemMessage(`❌ Ошибка: ${message}`);
+        // Показываем ошибку в чате только для критичных ошибок
+        if (message.includes('аутентификации') || message.includes('не найден') || message.includes('загрузке канала')) {
+            this.addSystemMessage(`❌ Ошибка: ${message}`);
+        }
     }
     
     showSuccess(message) {
@@ -2840,6 +2853,65 @@ class TwitchChat {
     getChannels() {
         return [...this.channels];
     }
+    
+    // Получение аватарки канала
+    getChannelAvatar(channelName) {
+        // Кэш аватарок каналов
+        if (!this.channelAvatars) {
+            this.channelAvatars = new Map();
+        }
+        
+        // Если аватарка уже загружена, возвращаем её
+        if (this.channelAvatars.has(channelName)) {
+            return this.channelAvatars.get(channelName);
+        }
+        
+        // Загружаем аватарку канала
+        this.loadChannelAvatar(channelName);
+        
+        // Возвращаем временную иконку
+        return `<img class="channel-avatar" src="https://static-cdn.jtvnw.net/jtv_user_pictures/${channelName}-profile_image-70x70.png" alt="${channelName}" title="${channelName}" style="width: 1em; height: 1em; border-radius: 50%; vertical-align: middle; margin-right: 2px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" /><span style="display: none;">📺</span>`;
+    }
+    
+    // Загрузка аватарки канала
+    async loadChannelAvatar(channelName) {
+        try {
+            const response = await fetch(`https://api.twitch.tv/helix/users?login=${channelName}`, {
+                headers: {
+                    'Client-ID': this.twitchClientId
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.data && data.data.length > 0) {
+                    const user = data.data[0];
+                    const avatarUrl = user.profile_image_url;
+                    
+                    // Сохраняем аватарку в кэш
+                    this.channelAvatars.set(channelName, 
+                        `<img class="channel-avatar" src="${avatarUrl}" alt="${channelName}" title="${channelName}" style="width: 1em; height: 1em; border-radius: 50%; vertical-align: middle; margin-right: 2px; object-fit: cover;" />`
+                    );
+                    
+                    // Обновляем все сообщения с этим каналом
+                    this.updateChannelAvatars(channelName);
+                }
+            }
+        } catch (error) {
+            console.warn('Ошибка загрузки аватарки канала:', channelName, error);
+        }
+    }
+    
+    // Обновление аватарок канала в существующих сообщениях
+    updateChannelAvatars(channelName) {
+        const messages = this.chatMessagesElement.querySelectorAll(`[data-source-channel="${channelName}"]`);
+        messages.forEach(message => {
+            const channelBadge = message.querySelector('.channel-badge');
+            if (channelBadge) {
+                channelBadge.innerHTML = this.channelAvatars.get(channelName);
+            }
+        });
+    }
 
     disconnect() {
         if (this.socket) {
@@ -3352,12 +3424,11 @@ class TwitchChat {
         console.log('❌ Бейдж не найден:', badgeType, badgeVersion);
         return null;
     }
+    
 }
 
-// Инициализация чата при загрузке страницы
-document.addEventListener('DOMContentLoaded', () => {
-    window.twitchChat = new TwitchChat();
-});
+// Инициализация чата происходит в редакторе
+// Автоматическая инициализация удалена для предотвращения дублирования
 
 // Обработка закрытия страницы
 window.addEventListener('beforeunload', () => {

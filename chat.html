@@ -24,5 +24,26 @@
     <script src="https://cdn.jsdelivr.net/npm/reconnecting-websocket@4.4.0/dist/reconnecting-websocket.min.js"></script>
     
     <script src="script.js"></script>
+    
+    <script>
+        // Простая инициализация чата
+        document.addEventListener('DOMContentLoaded', () => {
+            // Создаем чат
+            window.twitchChat = new TwitchChat();
+            
+            // Получаем канал из URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const channel = urlParams.get('channel');
+            
+            if (channel) {
+                window.twitchChat.settings.channel = channel;
+                window.twitchChat.applySettings();
+                window.twitchChat.connectToChat();
+                console.log('✅ Чат подключен к каналу:', channel);
+            } else {
+                console.log('⚠️ Канал не указан в URL');
+            }
+        });
+    </script>
 </body>
 </html>
