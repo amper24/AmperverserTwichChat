@@ -1475,8 +1475,15 @@ class TwitchChat {
                     badgeElements.push(`<img class="badge" src="${badgeData.image}" alt="${badgeData.title}" title="${badgeData.description}" />`);
                     console.log('✅ Бейдж найден в кэше:', badgeKey);
                 } else {
-                    // Fallback на старую систему
-                    this.loadBadgeDirectly(badgeType, badgeVersion, badgeElements);
+                    // Fallback на базовые ролевые значки для канала
+                    const fallbackBadge = this.getFallbackBadge(badgeType);
+                    if (fallbackBadge) {
+                        badgeElements.push(fallbackBadge);
+                        console.log('🔄 Используем fallback бейдж для роли:', badgeType);
+                    } else {
+                        // Fallback на старую систему
+                        this.loadBadgeDirectly(badgeType, badgeVersion, badgeElements);
+                    }
                 }
             });
         }
@@ -1619,6 +1626,17 @@ class TwitchChat {
         }
         
         return ''; // Если значка нет - ничего не показываем
+    }
+    
+    getBadgeTitle(badgeType, badgeVersion) {
+        const titles = {
+            'broadcaster': 'Стример',
+            'moderator': 'Модератор',
+            'vip': 'VIP',
+            'subscriber': `Подписчик (${badgeVersion} мес.)`
+        };
+        
+        return titles[badgeType] || badgeType;
     }
     
     // Обрабатываем эмодзи по образцу jChat v2
@@ -3114,4 +3132,4 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
-// Version: 20250127120004 - Improved badge system like emotes with user stats
+// Version: 20250127120005 - Added fallback badges for channel roles
