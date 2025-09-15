@@ -1158,7 +1158,7 @@ class TwitchChat {
         if (!this.chatMessagesElement) return;
         
         const messages = this.chatMessagesElement.querySelectorAll('.message');
-        const maxMessages = 10; // Максимальное количество видимых сообщений
+        const maxMessages = this.settings.maxMessages || 100; // Используем настройку из конфигурации
         
         if (messages.length > maxMessages) {
             // Удаляем самые старые сообщения
@@ -3132,4 +3132,4 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
-// Version: 20250127120005 - Added fallback badges for channel roles
+// Version: 20250127120006 - Removed hardcoded message limit
