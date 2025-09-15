@@ -479,10 +479,15 @@ class TwitchChat {
                 
                 // Применяем цвет или градиент
                 if (this.settings.backgroundGradient !== 'none') {
+                    // Применяем прозрачность к цветам градиента
+                    const opacity = this.settings.backgroundOpacity / 100;
+                    const color1WithOpacity = this.hexToRgba(this.settings.gradientColor1, opacity);
+                    const color2WithOpacity = this.hexToRgba(this.settings.gradientColor2, opacity);
+                    
                     const gradient = this.createGradient(
                         this.settings.backgroundGradient,
-                        this.settings.gradientColor1,
-                        this.settings.gradientColor2,
+                        color1WithOpacity,
+                        color2WithOpacity,
                         this.settings.gradientDirection
                     );
                     
@@ -515,9 +520,12 @@ class TwitchChat {
                         computedStyle: window.getComputedStyle(this.chatContainer).background
                     });
                 } else {
-                    this.chatContainer.style.background = this.settings.backgroundColor;
+                    // Применяем цвет фона с учетом прозрачности
+                    const opacity = this.settings.backgroundOpacity / 100;
+                    const color = this.hexToRgba(this.settings.backgroundColor, opacity);
+                    this.chatContainer.style.background = color;
                     this.chatContainer.style.backgroundImage = '';
-                    this.chatContainer.style.setProperty('--fallback-bg', this.settings.backgroundColor);
+                    this.chatContainer.style.setProperty('--fallback-bg', color);
                 }
                 
                 this.chatContainer.style.backdropFilter = 'blur(10px)';
@@ -574,10 +582,15 @@ class TwitchChat {
         
         // Принудительное применение градиента в конце (на случай переопределения)
         if (this.settings.backgroundGradient !== 'none' && !this.settings.hideBackground) {
+            // Применяем прозрачность к цветам градиента
+            const opacity = this.settings.backgroundOpacity / 100;
+            const color1WithOpacity = this.hexToRgba(this.settings.gradientColor1, opacity);
+            const color2WithOpacity = this.hexToRgba(this.settings.gradientColor2, opacity);
+            
             const gradient = this.createGradient(
                 this.settings.backgroundGradient,
-                this.settings.gradientColor1,
-                this.settings.gradientColor2,
+                color1WithOpacity,
+                color2WithOpacity,
                 this.settings.gradientDirection
             );
             
