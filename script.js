@@ -11,6 +11,12 @@ class TwitchChat {
         this.twitchClientId = 'ixowm4lsi8n8c07c5q6o9wajawma2m'; // Ваш Client ID
         this.twitchOAuthToken = '3907ydvzaj8du83lv2fqvy6uk6151s'; // Ваш OAuth токен
         
+        // Новая система бейджей по образцу эмодзи
+        this.badges = {}; // Кэш бейджей как у эмодзи
+        this.globalBadges = {}; // Глобальные бейджи
+        this.channelBadges = {}; // Бейджи канала
+        this.userStatsCache = new Map(); // Кэш статистики пользователей
+        
         // Массивы для эмодзи (BTTV)
         this.bttvGlobalEmotes = [];
         this.bttvChannelEmotes = [];
@@ -681,6 +687,10 @@ class TwitchChat {
                 this.loadEmotes(channelId);
                 
             // Загружаем бейджи через новую систему
+            // Загружаем бейджи (новая система)
+            this.loadBadges(this.channelNumericId);
+            
+            // Загружаем старую систему для совместимости
             this.loadAllBadges();
                 
                 // Загружаем cheers/bits
@@ -1450,7 +1460,7 @@ class TwitchChat {
         
         const badgeElements = [];
         
-        // Обработка Twitch бейджей из IRC тегов (упрощенная версия)
+        // Обработка Twitch бейджей из IRC тегов (новая система)
         if (typeof(userData.badges) === 'string') {
             console.log('🏷️ Обрабатываем бейджи пользователя:', userData.badges);
             
@@ -1458,8 +1468,16 @@ class TwitchChat {
                 const [badgeType, badgeVersion] = badge.split('/');
                 console.log('🏷️ Обрабатываем бейдж:', badgeType, badgeVersion);
                 
-                // Загружаем бейдж напрямую через Twitch API
-                this.loadBadgeDirectly(badgeType, badgeVersion, badgeElements);
+                // Используем новую систему бейджей
+                const badgeKey = `${badgeType}/${badgeVersion}`;
+                if (this.badges[badgeKey]) {
+                    const badgeData = this.badges[badgeKey];
+                    badgeElements.push(`<img class="badge" src="${badgeData.image}" alt="${badgeData.title}" title="${badgeData.description}" />`);
+                    console.log('✅ Бейдж найден в кэше:', badgeKey);
+                } else {
+                    // Fallback на старую систему
+                    this.loadBadgeDirectly(badgeType, badgeVersion, badgeElements);
+                }
             });
         }
         
@@ -1474,7 +1492,6 @@ class TwitchChat {
                 badgeElements.push(badgeHtml);
             });
         }
-        
         
         return badgeElements.join('');
     }
@@ -2611,6 +2628,117 @@ class TwitchChat {
         this.getChannelIdAndLoadBadges();
     }
     
+    // Загрузка бейджей по образцу эмодзи
+    loadBadges(channelID) {
+        console.log('🏷️ Загружаем бейджи для канала:', channelID);
+        
+        // Инициализируем кэш бейджей
+        this.badges = {};
+        
+        // Загружаем глобальные бейджи
+        this.loadGlobalBadges();
+        
+        // Загружаем бейджи канала
+        this.loadChannelBadges(channelID);
+    }
+    
+    // Загрузка глобальных бейджей (по образцу BTTV)
+    loadGlobalBadges() {
+        console.log('🌐 Загружаем глобальные бейджи...');
+        
+        const headers = {
+            'Client-ID': this.twitchClientId
+        };
+        
+        if (this.twitchOAuthToken) {
+            headers['Authorization'] = `Bearer ${this.twitchOAuthToken}`;
+        }
+        
+        fetch('https://api.twitch.tv/helix/chat/badges/global', { headers })
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data.data && Array.isArray(data.data)) {
+                    data.data.forEach(badge => {
+                        this.globalBadges[badge.set_id] = badge;
+                        
+                        // Добавляем в общий кэш бейджей
+                        if (badge.versions) {
+                            Object.entries(badge.versions).forEach(([version, versionData]) => {
+                                const badgeKey = `${badge.set_id}/${version}`;
+                                this.badges[badgeKey] = {
+                                    id: badge.set_id,
+                                    version: version,
+                                    image: versionData.image_url_1x,
+                                    title: versionData.title || badge.set_id,
+                                    description: versionData.description || ''
+                                };
+                            });
+                        }
+                    });
+                    console.log('✅ Глобальные бейджи загружены:', Object.keys(this.globalBadges).length);
+                }
+            })
+            .catch(err => {
+                console.warn('❌ Ошибка загрузки глобальных бейджей:', err.message);
+            });
+    }
+    
+    // Загрузка бейджей канала (по образцу BTTV)
+    loadChannelBadges(channelID) {
+        if (!channelID) {
+            console.log('⚠️ ID канала не указан для загрузки бейджей');
+            return;
+        }
+        
+        console.log('🏠 Загружаем бейджи канала:', channelID);
+        
+        const headers = {
+            'Client-ID': this.twitchClientId
+        };
+        
+        if (this.twitchOAuthToken) {
+            headers['Authorization'] = `Bearer ${this.twitchOAuthToken}`;
+        }
+        
+        fetch(`https://api.twitch.tv/helix/chat/badges?broadcaster_id=${channelID}`, { headers })
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data.data && Array.isArray(data.data)) {
+                    data.data.forEach(badge => {
+                        this.channelBadges[badge.set_id] = badge;
+                        
+                        // Добавляем в общий кэш бейджей
+                        if (badge.versions) {
+                            Object.entries(badge.versions).forEach(([version, versionData]) => {
+                                const badgeKey = `${badge.set_id}/${version}`;
+                                this.badges[badgeKey] = {
+                                    id: badge.set_id,
+                                    version: version,
+                                    image: versionData.image_url_1x,
+                                    title: versionData.title || badge.set_id,
+                                    description: versionData.description || ''
+                                };
+                            });
+                        }
+                    });
+                    console.log('✅ Бейджи канала загружены:', Object.keys(this.channelBadges).length);
+                }
+            })
+            .catch(err => {
+                console.warn('❌ Ошибка загрузки бейджей канала:', err.message);
+            });
+    }
+    
     // Получение числового ID канала через Twitch API
     async getChannelIdAndLoadBadges() {
         if (!this.channel) {
@@ -2650,6 +2778,75 @@ class TwitchChat {
         } catch (error) {
             console.error('❌ Ошибка получения ID канала:', error);
         }
+    }
+    
+    // Получение полной статистики пользователя для загрузки всех бейджей
+    async getUserStatsAndBadges(username) {
+        if (!username) return null;
+        
+        console.log('👤 Получаем статистику пользователя:', username);
+        
+        const headers = {
+            'Client-ID': this.twitchClientId
+        };
+        
+        if (this.twitchOAuthToken) {
+            headers['Authorization'] = `Bearer ${this.twitchOAuthToken}`;
+        }
+        
+        try {
+            // Получаем информацию о пользователе
+            const userResponse = await fetch(`https://api.twitch.tv/helix/users?login=${username}`, { headers });
+            
+            if (!userResponse.ok) {
+                throw new Error(`HTTP ${userResponse.status}: ${userResponse.statusText}`);
+            }
+            
+            const userData = await userResponse.json();
+            
+            if (userData.data && userData.data.length > 0) {
+                const user = userData.data[0];
+                console.log('✅ Получена информация о пользователе:', user);
+                
+                // Получаем подписки пользователя
+                const subsResponse = await fetch(`https://api.twitch.tv/helix/subscriptions?broadcaster_id=${this.channelNumericId}&user_id=${user.id}`, { headers });
+                let subscriptionData = null;
+                
+                if (subsResponse.ok) {
+                    subscriptionData = await subsResponse.json();
+                    console.log('📺 Данные подписки:', subscriptionData);
+                }
+                
+                // Получаем информацию о модерации
+                const modsResponse = await fetch(`https://api.twitch.tv/helix/moderation/moderators?broadcaster_id=${this.channelNumericId}&user_id=${user.id}`, { headers });
+                let modData = null;
+                
+                if (modsResponse.ok) {
+                    modData = await modsResponse.json();
+                    console.log('🛡️ Данные модерации:', modData);
+                }
+                
+                // Получаем информацию о VIP
+                const vipResponse = await fetch(`https://api.twitch.tv/helix/channels/vips?broadcaster_id=${this.channelNumericId}&user_id=${user.id}`, { headers });
+                let vipData = null;
+                
+                if (vipResponse.ok) {
+                    vipData = await vipResponse.json();
+                    console.log('⭐ Данные VIP:', vipData);
+                }
+                
+                return {
+                    user,
+                    subscription: subscriptionData?.data?.[0] || null,
+                    moderator: modData?.data?.[0] || null,
+                    vip: vipData?.data?.[0] || null
+                };
+            }
+        } catch (error) {
+            console.error('❌ Ошибка получения статистики пользователя:', error);
+        }
+        
+        return null;
     }
     
     // Загрузка глобальных бейджей с Twitch API
@@ -2917,4 +3114,4 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
-// Version: 20250127120003 - Fixed Twitch API badges according to official docs
+// Version: 20250127120004 - Improved badge system like emotes with user stats
