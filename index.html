@@ -16,9 +16,13 @@
             <div class="settings-panel">
                 <div class="settings-nav">
                     <button class="nav-btn active" data-section="basic">Основные</button>
-                    <button class="nav-btn" data-section="appearance">Внешний вид</button>
+                    <button class="nav-btn" data-section="border">🎨 Рамка</button>
+                    <button class="nav-btn" data-section="background">🖼️ Фон</button>
+                    <button class="nav-btn" data-section="layout">📐 Макет</button>
+                    <button class="nav-btn" data-section="display">👁️ Отображение</button>
                     <button class="nav-btn" data-section="animations">Анимации</button>
                     <button class="nav-btn" data-section="messages">Сообщения</button>
+                    <button class="nav-btn" data-section="moderation">🛡️ Модерация</button>
                     <button class="nav-btn" data-section="fonts">🔤 Шрифты</button>
                     <button class="nav-btn" data-section="obs">OBS</button>
                 </div>
@@ -46,7 +50,7 @@
                     </div>
                 </div>
                 
-                <div class="setting-group" data-section="appearance">
+                <div class="setting-group" data-section="border">
                     <h3>🎨 Настройки рамки</h3>
                     <div class="setting-item">
                         <label for="border-width">Толщина рамки:</label>
@@ -96,7 +100,9 @@
                         <input type="number" id="glow-intensity-number" min="5" max="50" value="20" class="number-input">
                         <span id="glow-intensity-value">20px</span>
                     </div>
-                    
+                </div>
+                
+                <div class="setting-group" data-section="background">
                     <h3>🖼️ Настройки фона</h3>
                     <div class="setting-item">
                         <label for="background-image">Фоновое изображение:</label>
@@ -192,8 +198,10 @@
                         <label for="hide-background">Скрыть фон:</label>
                         <input type="checkbox" id="hide-background" class="checkbox-input">
                     </div>
-                    
-                    <h3>👁️ Настройки отображения</h3>
+                </div>
+                
+                <div class="setting-group" data-section="layout">
+                    <h3>📐 Настройки макета</h3>
                     <div class="setting-item">
                         <label for="message-alignment">Выравнивание сообщений:</label>
                         <select id="message-alignment" class="select-input">
@@ -243,6 +251,10 @@
                         <input type="number" id="message-vertical-offset-number" min="-50" max="50" value="0" class="number-input">
                         <span id="message-vertical-offset-value">0px</span>
                     </div>
+                </div>
+                
+                <div class="setting-group" data-section="display">
+                    <h3>👁️ Настройки отображения</h3>
                     
                     <h3>💬 Настройки фона сообщений</h3>
                     <div class="setting-item">
@@ -353,6 +365,63 @@
                             <option value="bottom right">Низ-право</option>
                         </select>
                     </div>
+                    
+                    <div class="setting-item">
+                        <label for="message-background-image-1">Фоновое изображение 1 (нижний слой):</label>
+                        <input type="url" id="message-background-image-1" placeholder="https://example.com/image1.jpg">
+                        <button id="clear-message-bg-1" class="clear-btn">🗑️ Очистить</button>
+                    </div>
+                    <div class="setting-item">
+                        <label for="message-background-image-2">Фоновое изображение 2 (верхний слой):</label>
+                        <input type="url" id="message-background-image-2" placeholder="https://example.com/image2.jpg">
+                        <button id="clear-message-bg-2" class="clear-btn">🗑️ Очистить</button>
+                    </div>
+                    <div class="setting-item">
+                        <label for="message-bg-size-1">Размер изображения 1:</label>
+                        <select id="message-bg-size-1">
+                            <option value="cover">Покрыть</option>
+                            <option value="contain">Вместить</option>
+                            <option value="auto">Авто</option>
+                            <option value="100% 100%">Растянуть</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="message-bg-position-1">Позиция изображения 1:</label>
+                        <select id="message-bg-position-1">
+                            <option value="center">Центр</option>
+                            <option value="top">Верх</option>
+                            <option value="bottom">Низ</option>
+                            <option value="left">Лево</option>
+                            <option value="right">Право</option>
+                            <option value="top left">Верх-лево</option>
+                            <option value="top right">Верх-право</option>
+                            <option value="bottom left">Низ-лево</option>
+                            <option value="bottom right">Низ-право</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="message-bg-size-2">Размер изображения 2:</label>
+                        <select id="message-bg-size-2">
+                            <option value="cover">Покрыть</option>
+                            <option value="contain">Вместить</option>
+                            <option value="auto">Авто</option>
+                            <option value="100% 100%">Растянуть</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="message-bg-position-2">Позиция изображения 2:</label>
+                        <select id="message-bg-position-2">
+                            <option value="center">Центр</option>
+                            <option value="top">Верх</option>
+                            <option value="bottom">Низ</option>
+                            <option value="left">Лево</option>
+                            <option value="right">Право</option>
+                            <option value="top left">Верх-лево</option>
+                            <option value="top right">Верх-право</option>
+                            <option value="bottom left">Низ-лево</option>
+                            <option value="bottom right">Низ-право</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <div class="setting-group" data-section="messages">
@@ -381,6 +450,16 @@
                     </div>
                 </div>
                 
+                <div class="setting-group" data-section="moderation">
+                    <h3>🛡️ Настройки модерации</h3>
+                    
+                    <div class="setting-item checkbox-item">
+                        <label for="hide-link-only-messages">Скрывать сообщения только из ссылок:</label>
+                        <input type="checkbox" id="hide-link-only-messages" class="checkbox-input">
+                        <span class="setting-hint">Полностью скрывает сообщения, состоящие только из ссылок</span>
+                    </div>
+                    
+                </div>
                 
                 <div class="setting-group" data-section="fonts">
                     <h3>🔤 Настройки шрифтов</h3>

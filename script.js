@@ -67,6 +67,7 @@ class TwitchChat {
         borderMode: 'fit-content',
         borderAlignment: 'left',
         chatDirection: 'top-to-bottom-new-down',
+        hideLinkOnlyMessages: false, // Скрывать сообщения только из ссылок
             messageSpacing: 3,
             messageVerticalOffset: 0,
             appearAnimation: 'none',
@@ -333,6 +334,7 @@ class TwitchChat {
         if (urlParams.get('chatDirection')) this.settings.chatDirection = urlParams.get('chatDirection');
         if (urlParams.get('messageSpacing')) this.settings.messageSpacing = parseInt(urlParams.get('messageSpacing'));
         if (urlParams.get('messageVerticalOffset')) this.settings.messageVerticalOffset = parseInt(urlParams.get('messageVerticalOffset'));
+        if (urlParams.get('hideLinkOnlyMessages')) this.settings.hideLinkOnlyMessages = urlParams.get('hideLinkOnlyMessages') === 'true';
         
         // Настройки анимаций
         if (urlParams.get('appearAnimation')) this.settings.appearAnimation = urlParams.get('appearAnimation');
@@ -2142,6 +2144,20 @@ class TwitchChat {
     
     // Метод getChannelId удален - используем только SVG значки
     
+    // Функция для определения, является ли текст ссылкой
+    isLink(text) {
+        const linkRegex = /^https?:\/\/[^\s]+$/i;
+        return linkRegex.test(text.trim());
+    }
+    
+    // Функция для определения, состоит ли сообщение только из ссылок
+    isOnlyLinks(text) {
+        const words = text.trim().split(/\s+/);
+        return words.length > 0 && words.every(word => this.isLink(word));
+    }
+    
+    
+    
     // Метод для добавления сообщений в зависимости от направления чата
     addMessageByDirection(messageElement) {
         switch (this.settings.chatDirection) {
@@ -2275,8 +2291,15 @@ class TwitchChat {
             }
         }
         
+        // Модерация ссылок
+        // Скрываем сообщения только из ссылок (если включено)
+        if (this.settings.hideLinkOnlyMessages && this.isOnlyLinks(text)) {
+            console.log('🚫 Сообщение с одними ссылками заблокировано:', text);
+            return;
+        }
+        
         // Обрабатываем эмодзи в тексте сообщения
-        const processedText = this.processEmotes(text, userData);
+        let processedText = this.processEmotes(text, userData);
         
         // Обработка ACTION сообщений (/me)
         let messageHtml = '';

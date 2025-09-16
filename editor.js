@@ -35,6 +35,7 @@ class ChatEditor {
             borderMode: 'fit-content',
             borderAlignment: 'left',
             chatDirection: 'top-to-bottom-new-down',
+            hideLinkOnlyMessages: false, // Скрывать сообщения только из ссылок
             messageSpacing: 3,
             messageVerticalOffset: 0,
             appearAnimation: 'none',
@@ -157,6 +158,7 @@ class ChatEditor {
             gradientSettings: document.getElementById('gradient-settings'),
             hideBackground: document.getElementById('hide-background'),
             fadeMessages: document.getElementById('fade-messages'),
+            hideLinkOnlyMessages: document.getElementById('hide-link-only-messages'),
             messageAlignment: document.getElementById('message-alignment'),
             borderMode: document.getElementById('border-mode'),
             borderAlignment: document.getElementById('border-alignment'),
@@ -529,6 +531,12 @@ class ChatEditor {
             this.settings.fadeMessages = e.target.checked;
             this.updatePreview();
         });
+        
+        this.elements.hideLinkOnlyMessages.addEventListener('change', (e) => {
+            this.settings.hideLinkOnlyMessages = e.target.checked;
+            this.updatePreview();
+        });
+        
         
         this.elements.messageAlignment.addEventListener('change', (e) => {
             this.settings.messageAlignment = e.target.value;
@@ -1606,6 +1614,20 @@ class ChatEditor {
         }
     }
     
+    // Функция для определения, является ли текст ссылкой
+    isLink(text) {
+        const linkRegex = /^https?:\/\/[^\s]+$/i;
+        return linkRegex.test(text.trim());
+    }
+    
+    // Функция для определения, состоит ли сообщение только из ссылок
+    isOnlyLinks(text) {
+        const words = text.trim().split(/\s+/);
+        return words.length > 0 && words.every(word => this.isLink(word));
+    }
+    
+    
+    
     // Метод для добавления сообщений в зависимости от направления чата в предпросмотре
     addPreviewMessageByDirection(messageElement) {
         const messagesContainer = this.elements.previewChatMessages;
@@ -1747,8 +1769,15 @@ class ChatEditor {
             channelBadge = `<span class="channel-badge" title="Канал: ${userData.sourceChannel}">${channelAvatar}</span>`;
         }
         
+        // Модерация ссылок в предпросмотре
+        // Скрываем сообщения только из ссылок (если включено)
+        if (this.settings.hideLinkOnlyMessages && this.isOnlyLinks(text)) {
+            console.log('🚫 Сообщение предпросмотра с одними ссылками заблокировано:', text);
+            return;
+        }
+        
         // Обрабатываем эмодзи в тексте сообщения
-        const processedText = this.processEmotes(text, userData);
+        let processedText = this.processEmotes(text, userData);
         
         // Обработка ACTION сообщений (/me)
         let messageHtml = '';
@@ -2313,6 +2342,7 @@ class ChatEditor {
         
         // Настройки сообщений
         params.set('fadeMessages', this.settings.fadeMessages);
+        params.set('hideLinkOnlyMessages', this.settings.hideLinkOnlyMessages);
         params.set('messageAlignment', this.settings.messageAlignment);
         params.set('borderMode', this.settings.borderMode);
         params.set('borderAlignment', this.settings.borderAlignment);
@@ -2492,6 +2522,7 @@ class ChatEditor {
         this.toggleGradientSettings();
         if (this.elements.hideBackground) this.elements.hideBackground.checked = this.settings.hideBackground;
         if (this.elements.fadeMessages) this.elements.fadeMessages.checked = this.settings.fadeMessages;
+        if (this.elements.hideLinkOnlyMessages) this.elements.hideLinkOnlyMessages.checked = this.settings.hideLinkOnlyMessages;
         if (this.elements.messageAlignment) this.elements.messageAlignment.value = this.settings.messageAlignment;
         if (this.elements.borderMode) this.elements.borderMode.value = this.settings.borderMode;
         if (this.elements.borderAlignment) this.elements.borderAlignment.value = this.settings.borderAlignment;
@@ -2651,6 +2682,7 @@ class ChatEditor {
                 gradientDirection: 'to right',
                 hideBackground: false,
                 fadeMessages: false, // По умолчанию отключено
+                hideLinkOnlyMessages: false, // По умолчанию отключено
                 messageAlignment: 'left',
                 borderMode: 'fit-content',
                 borderAlignment: 'left',
