@@ -288,7 +288,8 @@ class ChatEditor {
             resetBtn: document.getElementById('reset-settings'),
             exportBtn: document.getElementById('export-settings'),
             importBtn: document.getElementById('import-settings'),
-            importFile: document.getElementById('import-file')
+            importFile: document.getElementById('import-file'),
+            cleanImagesBtn: document.getElementById('clean-images')
         };
     }
     
@@ -1002,6 +1003,10 @@ class ChatEditor {
             this.elements.importFile.click();
         });
         
+        this.elements.cleanImagesBtn.addEventListener('click', () => {
+            this.cleanInvalidImages();
+        });
+        
         this.elements.importFile.addEventListener('change', (e) => {
             this.importSettings(e.target.files[0]);
         });
@@ -1080,9 +1085,59 @@ class ChatEditor {
         }
     }
     
+    // Проверка существования изображения
+    async checkImageExists(url) {
+        if (!url || !this.isValidImageUrl(url)) {
+            return false;
+        }
+        
+        try {
+            const response = await fetch(url, { method: 'HEAD' });
+            return response.ok;
+        } catch (error) {
+            console.warn('⚠️ Ошибка проверки изображения:', url, error.message);
+            return false;
+        }
+    }
+    
+    // Очистка недействительных изображений из настроек
+    cleanInvalidImages() {
+        const imageFields = [
+            'backgroundImage',
+            'messageBackgroundImage1', 
+            'messageBackgroundImage2'
+        ];
+        
+        let cleaned = false;
+        imageFields.forEach(field => {
+            if (this.settings[field] && !this.isValidImageUrl(this.settings[field])) {
+                console.log(`🧹 Очищаем недействительное изображение из ${field}:`, this.settings[field]);
+                this.settings[field] = '';
+                cleaned = true;
+            }
+        });
+        
+        if (cleaned) {
+            this.saveSettings();
+            this.showStatus('🧹 Недействительные изображения очищены', 'info');
+        }
+    }
+    
     showBackgroundPreview(url) {
+        if (!url || !this.isValidImageUrl(url)) {
+            this.hideBackgroundPreview();
+            return;
+        }
+        
         this.elements.backgroundPreviewImg.src = url;
         this.elements.backgroundPreview.style.display = 'block';
+        
+        // Добавляем обработчик ошибок загрузки
+        this.elements.backgroundPreviewImg.onerror = () => {
+            console.warn('⚠️ Ошибка загрузки фонового изображения:', url);
+            this.hideBackgroundPreview();
+            this.showStatus('⚠️ Ошибка загрузки изображения', 'warning');
+        };
     }
     
     hideBackgroundPreview() {
@@ -2475,6 +2530,9 @@ class ChatEditor {
                 console.error('Ошибка при загрузке настроек:', error);
             }
         }
+        
+        // Очищаем недействительные изображения
+        this.cleanInvalidImages();
     }
     
     applySettingsToUI() {

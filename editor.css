@@ -1989,6 +1989,10 @@ body {
     background: linear-gradient(45deg, #FF9800, #F57C00);
 }
 
+.clean-btn {
+    background: linear-gradient(45deg, #9C27B0, #7B1FA2);
+}
+
 .action-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
