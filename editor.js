@@ -289,7 +289,8 @@ class ChatEditor {
             exportBtn: document.getElementById('export-settings'),
             importBtn: document.getElementById('import-settings'),
             importFile: document.getElementById('import-file'),
-            cleanImagesBtn: document.getElementById('clean-images')
+            cleanImagesBtn: document.getElementById('clean-images'),
+            clearTestDataBtn: document.getElementById('clear-test-data')
         };
     }
     
@@ -1005,6 +1006,13 @@ class ChatEditor {
         
         this.elements.cleanImagesBtn.addEventListener('click', () => {
             this.cleanInvalidImages();
+            this.forceCleanLocalStorage();
+        });
+        
+        this.elements.clearTestDataBtn.addEventListener('click', () => {
+            if (confirm('Вы уверены, что хотите очистить все тестовые данные? Это действие нельзя отменить.')) {
+                this.clearAllTestData();
+            }
         });
         
         this.elements.importFile.addEventListener('change', (e) => {
@@ -1076,6 +1084,22 @@ class ChatEditor {
             new URL(url);
             const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
             const lowerUrl = url.toLowerCase();
+            
+            // Блокируем тестовые изображения
+            const invalidImages = ['sex2.png', 'test.png', 'demo.png', 'sample.png', 'placeholder.png'];
+            const isTestImage = invalidImages.some(invalid => lowerUrl.includes(invalid));
+            
+            // Блокируем подозрительные Discord CDN ссылки
+            const isDiscordTest = lowerUrl.includes('discordapp.net') && 
+                                (lowerUrl.includes('784724332614123550') || 
+                                 lowerUrl.includes('sex2') ||
+                                 lowerUrl.includes('test'));
+            
+            if (isTestImage || isDiscordTest) {
+                console.warn('🚫 Блокируем тестовое изображение:', url);
+                return false;
+            }
+            
             return imageExtensions.some(ext => lowerUrl.includes(ext)) || 
                    lowerUrl.includes('imgur.com') || 
                    lowerUrl.includes('i.redd.it') ||
@@ -1108,18 +1132,175 @@ class ChatEditor {
             'messageBackgroundImage2'
         ];
         
+        // Список тестовых/недействительных изображений для принудительной очистки
+        const invalidImages = [
+            'sex2.png',
+            'test.png',
+            'demo.png',
+            'sample.png',
+            'placeholder.png'
+        ];
+        
         let cleaned = false;
         imageFields.forEach(field => {
-            if (this.settings[field] && !this.isValidImageUrl(this.settings[field])) {
-                console.log(`🧹 Очищаем недействительное изображение из ${field}:`, this.settings[field]);
-                this.settings[field] = '';
-                cleaned = true;
+            if (this.settings[field]) {
+                const imageUrl = this.settings[field].toLowerCase();
+                
+                // Проверяем на недействительные URL
+                const isInvalidUrl = !this.isValidImageUrl(this.settings[field]);
+                
+                // Проверяем на тестовые изображения
+                const isTestImage = invalidImages.some(invalid => imageUrl.includes(invalid));
+                
+                // Проверяем на Discord CDN с подозрительными ID
+                const isDiscordTest = imageUrl.includes('discordapp.net') && 
+                                    (imageUrl.includes('784724332614123550') || 
+                                     imageUrl.includes('sex2') ||
+                                     imageUrl.includes('test'));
+                
+                if (isInvalidUrl || isTestImage || isDiscordTest) {
+                    console.log(`🧹 Очищаем недействительное изображение из ${field}:`, this.settings[field]);
+                    this.settings[field] = '';
+                    cleaned = true;
+                }
             }
         });
         
         if (cleaned) {
             this.saveSettings();
             this.showStatus('🧹 Недействительные изображения очищены', 'info');
+        }
+    }
+    
+    // Принудительная очистка localStorage от тестовых данных
+    forceCleanLocalStorage() {
+        try {
+            const saved = localStorage.getItem('twitchChatSettings');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                let needsUpdate = false;
+                
+                // Проверяем все поля настроек на наличие тестовых изображений
+                const imageFields = ['backgroundImage', 'messageBackgroundImage1', 'messageBackgroundImage2'];
+                const invalidImages = ['sex2.png', 'test.png', 'demo.png', 'sample.png', 'placeholder.png'];
+                
+                imageFields.forEach(field => {
+                    if (parsed[field]) {
+                        const imageUrl = parsed[field].toLowerCase();
+                        const isTestImage = invalidImages.some(invalid => imageUrl.includes(invalid));
+                        const isDiscordTest = imageUrl.includes('discordapp.net') && 
+                                            (imageUrl.includes('784724332614123550') || 
+                                             imageUrl.includes('sex2') ||
+                                             imageUrl.includes('test'));
+                        
+                        if (isTestImage || isDiscordTest) {
+                            console.log(`🧹 Принудительно очищаем localStorage от тестового изображения в ${field}:`, parsed[field]);
+                            parsed[field] = '';
+                            needsUpdate = true;
+                        }
+                    }
+                });
+                
+                if (needsUpdate) {
+                    localStorage.setItem('twitchChatSettings', JSON.stringify(parsed));
+                    this.settings = { ...this.settings, ...parsed };
+                    this.applySettingsToUI();
+                    this.showStatus('🧹 localStorage очищен от тестовых изображений', 'success');
+                }
+            }
+        } catch (error) {
+            console.error('Ошибка при очистке localStorage:', error);
+        }
+    }
+    
+    // Полная очистка всех тестовых данных
+    clearAllTestData() {
+        try {
+            // Очищаем localStorage полностью
+            localStorage.removeItem('twitchChatSettings');
+            localStorage.removeItem('twitchChatChannel');
+            
+            // Сбрасываем настройки к значениям по умолчанию
+            this.settings = {
+                channel: '',
+                baseURL: 'https://amper24.github.io/AmperverserTwichChat/',
+                borderWidth: 3,
+                borderColor: '#9146ff',
+                borderOpacity: 100,
+                borderRadius: 10,
+                hideBorder: false,
+                enableGlow: false,
+                glowColor: '#9146ff',
+                glowIntensity: 20,
+                backgroundImage: '',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundOpacity: 100,
+                backgroundColor: '#1a1a2e',
+                backgroundGradient: 'none',
+                gradientColor1: '#1a1a2e',
+                gradientColor2: '#16213e',
+                gradientDirection: 'to right',
+                hideBackground: false,
+                messageAlignment: 'left',
+                borderMode: 'fit-content',
+                borderAlignment: 'left',
+                chatDirection: 'top-to-bottom-new-down',
+                messageSpacing: 3,
+                messageVerticalOffset: 0,
+                messageBackgroundColor: '#1a1a1a',
+                messageBackgroundOpacity: 80,
+                messageBackgroundGradient: 'none',
+                messageGradientColor1: '#1a1a1a',
+                messageGradientColor2: '#2a2a2a',
+                messageGradientDirection: 'to right',
+                messageBackgroundImage1: '',
+                messageBackgroundImage2: '',
+                messageBgSize1: 'cover',
+                messageBgPosition1: 'center',
+                messageBgSize2: 'cover',
+                messageBgPosition2: 'center',
+                maxMessages: 100,
+                messageSpeed: 300,
+                showUserBadges: true,
+                showChannelBadges: true,
+                hideLinkOnlyMessages: false,
+                fontFamily: 'Arial, sans-serif',
+                fontSize: 14,
+                fontWeight: '400',
+                lineHeight: 1.2,
+                letterSpacing: 0,
+                fontColor: '#ffffff',
+                textShadowEnabled: false,
+                textShadowX: 2,
+                textShadowY: 2,
+                textShadowBlur: 4,
+                textShadowColor: '#000000',
+                textGlowEnabled: false,
+                textGlowSize: 5,
+                textGlowColor: '#00ffff',
+                textStrokeEnabled: false,
+                textStrokeWidth: 2,
+                textStrokeColor: '#000000',
+                textStrokeType: 'outline',
+                fadeMessages: false,
+                appearAnimation: 'none',
+                appearDuration: 500,
+                appearDelay: 0,
+                disappearAnimation: 'none',
+                disappearDuration: 500,
+                messageDisplayTime: 10,
+                staggerAnimations: false,
+                staggerDelay: 100,
+                chatWidth: 800,
+                chatHeight: 600
+            };
+            
+            this.applySettingsToUI();
+            this.showStatus('🧹 Все тестовые данные очищены', 'success');
+            
+        } catch (error) {
+            console.error('Ошибка при полной очистке:', error);
         }
     }
     
@@ -2533,6 +2714,9 @@ class ChatEditor {
         
         // Очищаем недействительные изображения
         this.cleanInvalidImages();
+        
+        // Принудительно очищаем localStorage от тестовых данных
+        this.forceCleanLocalStorage();
     }
     
     applySettingsToUI() {
