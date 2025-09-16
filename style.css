@@ -35,7 +35,7 @@ body {
     border-radius: 10px;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: visible; /* Разрешаем сообщениям выходить за рамки */
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -75,7 +75,7 @@ body {
     flex: 1;
     padding: 20px;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: visible; /* Разрешаем сообщениям выходить за границы по горизонтали */
     display: flex;
     flex-direction: column;
     background: transparent;
@@ -90,13 +90,25 @@ body {
     display: none;
 }
 
-/* Направление чата */
-.chat-messages.direction-top-to-bottom {
+/* Направления чата */
+.chat-messages.direction-top-to-bottom-new-down {
     justify-content: flex-start;
+    flex-direction: column;
 }
 
-.chat-messages.direction-bottom-to-top {
+.chat-messages.direction-top-to-bottom-old-down {
+    justify-content: flex-start;
+    flex-direction: column;
+}
+
+.chat-messages.direction-bottom-to-top-new-up {
     justify-content: flex-end;
+    flex-direction: column;
+}
+
+.chat-messages.direction-bottom-to-top-old-up {
+    justify-content: flex-end;
+    flex-direction: column;
 }
 
 .message {
@@ -106,13 +118,15 @@ body {
     border-radius: 8px;
     word-wrap: break-word;
     word-break: break-word;
-    white-space: pre-wrap;
+    white-space: pre-wrap; /* Разрешаем перенос строк */
     opacity: 1;
     transform: translateX(0);
-    max-width: 100%;
+    width: auto; /* Автоматическая ширина */
+    min-width: 0;
     box-sizing: border-box;
     overflow-wrap: break-word;
     hyphens: auto;
+    overflow: visible; /* Показываем весь контент */
 }
 
 /* Класс для сообщений без анимации */
@@ -581,8 +595,8 @@ body {
 }
 
 .channel-avatar {
-    width: 1em;
-    height: 1em;
+    width: 1.3em;
+    height: 1.3em;
     border-radius: 50%;
     vertical-align: middle;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -596,7 +610,7 @@ body {
 .chat-container .emote, .chat-container img.emote, 
 #chat-messages .emote, #chat-messages img.emote,
 body .emote, body img.emote, html body .emote, html body img.emote {
-    height: 1em !important;
+    height: 1.4em !important;
     vertical-align: middle;
     margin: 0 !important;
     display: inline-block;
@@ -669,7 +683,7 @@ body .emote, body img.emote, html body .emote, html body img.emote {
 .message.border-fit-content {
     display: inline-block;
     width: auto;
-    max-width: calc(100% - 16px);
+    max-width: none; /* Убираем ограничение ширины */
     box-sizing: border-box;
     margin-bottom: 8px;
     min-width: 0;
@@ -677,8 +691,8 @@ body .emote, body img.emote, html body .emote, html body img.emote {
 
 .message.border-full-width {
     display: block;
-    width: 100%;
-    max-width: 100%;
+    width: auto; /* Автоматическая ширина */
+    max-width: none; /* Убираем ограничение ширины */
     box-sizing: border-box;
     margin-bottom: 4px;
     min-width: 0;
@@ -949,8 +963,8 @@ img.emoji {
 
 .emote, .chat-message .emote {
     vertical-align: middle;
-    height: 1em !important;
-    max-height: 1em !important;
+    height: 1.4em !important;
+    max-height: 1.4em !important;
     margin: 0 !important;
 }
 

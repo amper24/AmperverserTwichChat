@@ -1133,13 +1133,25 @@ body {
     display: none;
 }
 
-/* Направление чата */
-#preview-chat-messages.direction-top-to-bottom {
+/* Направления чата для предпросмотра */
+#preview-chat-messages.direction-top-to-bottom-new-down {
     justify-content: flex-start;
+    flex-direction: column;
 }
 
-#preview-chat-messages.direction-bottom-to-top {
+#preview-chat-messages.direction-top-to-bottom-old-down {
+    justify-content: flex-start;
+    flex-direction: column;
+}
+
+#preview-chat-messages.direction-bottom-to-top-new-up {
     justify-content: flex-end;
+    flex-direction: column;
+}
+
+#preview-chat-messages.direction-bottom-to-top-old-up {
+    justify-content: flex-end;
+    flex-direction: column;
 }
 
 /* Сообщения предпросмотра */
@@ -1237,8 +1249,8 @@ body {
 }
 
 .preview-message .channel-avatar {
-    width: 1em;
-    height: 1em;
+    width: 1.3em;
+    height: 1.3em;
     border-radius: 50%;
     vertical-align: middle;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -1251,7 +1263,7 @@ body {
 .preview-message .emote, .preview-message img.emote, 
 .preview-chat-container .emote, .preview-chat-container img.emote, 
 #preview-chat-messages .emote, #preview-chat-messages img.emote {
-    height: 1em !important;
+    height: 1.4em !important;
     vertical-align: middle;
     margin: 0 !important;
     display: inline-block;
@@ -1312,8 +1324,8 @@ body {
 /* Стили для эмодзи и бейджей из jChat */
 .preview-message .emote {
     vertical-align: middle;
-    height: 1em !important;
-    max-height: 1em !important;
+    height: 1.4em !important;
+    max-height: 1.4em !important;
     margin: 0 !important;
 }
 

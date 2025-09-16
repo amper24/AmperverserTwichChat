@@ -31,6 +31,19 @@
                         <button id="save-channel" class="save-btn">💾 Сохранить</button>
                         <button id="reconnect-btn" class="reconnect-btn">🔄 Переподключить</button>
                     </div>
+                    <div class="setting-item">
+                        <h4>🧪 Тестирование общего чата</h4>
+                        <div style="margin-bottom: 10px;">
+                            <label for="shared-channels-input" style="display: block; margin-bottom: 5px;">Каналы для общего чата (через запятую):</label>
+                            <input type="text" id="shared-channels-input" placeholder="crileaf, moonaticks, channel3" value="crileaf, moonaticks" style="width: 100%; margin-bottom: 10px;">
+                            <p style="font-size: 0.7em; color: #666; margin: 0;">Можно указать от 2 до 5 каналов, разделенных запятыми</p>
+                        </div>
+                        <button id="test-shared-chat" class="save-btn">🎯 Тест общего чата</button>
+                        <button id="stop-shared-chat-test" class="save-btn" style="display: none; background-color: #ff4444;">⏹️ Остановить тест</button>
+                        <p style="font-size: 0.8em; color: #888; margin-top: 5px;">
+                            Создает тестовый общий чат с указанными каналами для демонстрации аватарок каналов
+                        </p>
+                    </div>
                 </div>
                 
                 <div class="setting-group" data-section="appearance">
@@ -208,11 +221,28 @@
                     <div class="setting-item">
                         <label for="chat-direction">Направление чата:</label>
                         <select id="chat-direction" class="select-input">
-                            <option value="top-to-bottom">Сверху вниз</option>
-                            <option value="bottom-to-top">Снизу вверх</option>
+                            <option value="top-to-bottom-new-down">Сверху вниз (новые вниз)</option>
+                            <option value="top-to-bottom-old-down">Сверху вниз (старые вниз)</option>
+                            <option value="bottom-to-top-new-up">Снизу вверх (новые наверх)</option>
+                            <option value="bottom-to-top-old-up">Снизу вверх (старые наверх)</option>
                         </select>
                     </div>
                     
+                    <h3>📏 Расстояние между сообщениями</h3>
+                    <div class="setting-item">
+                        <label for="message-spacing">Расстояние между сообщениями (px):</label>
+                        <input type="range" id="message-spacing" min="0" max="20" value="3">
+                        <input type="number" id="message-spacing-number" min="0" max="20" value="3" class="number-input">
+                        <span id="message-spacing-value">3px</span>
+                    </div>
+                    
+                    <h3>⬆️ Смещение сообщений по вертикали</h3>
+                    <div class="setting-item">
+                        <label for="message-vertical-offset">Смещение по вертикали (px):</label>
+                        <input type="range" id="message-vertical-offset" min="-50" max="50" value="0">
+                        <input type="number" id="message-vertical-offset-number" min="-50" max="50" value="0" class="number-input">
+                        <span id="message-vertical-offset-value">0px</span>
+                    </div>
                     
                     <h3>💬 Настройки фона сообщений</h3>
                     <div class="setting-item">
@@ -638,6 +668,90 @@
                             <input type="text" id="font-color-text" value="#ffffff" class="color-text-input" placeholder="#ffffff">
                             <button type="button" id="font-color-preset" class="color-preset-btn" title="Предустановленные цвета">🎨</button>
                         </div>
+                    </div>
+                    
+                    <h4>✨ Эффекты текста</h4>
+                    
+                    <div class="setting-item checkbox-item">
+                        <label for="text-shadow-enabled">Включить тень текста:</label>
+                        <input type="checkbox" id="text-shadow-enabled" class="checkbox-input">
+                    </div>
+                    
+                    <div class="setting-item" id="text-shadow-settings" style="display: none;">
+                        <label for="text-shadow-x">Смещение тени по X:</label>
+                        <input type="range" id="text-shadow-x" min="-10" max="10" value="2">
+                        <input type="number" id="text-shadow-x-number" min="-10" max="10" value="2" class="number-input">
+                        <span id="text-shadow-x-value">2px</span>
+                    </div>
+                    
+                    <div class="setting-item" id="text-shadow-settings-y" style="display: none;">
+                        <label for="text-shadow-y">Смещение тени по Y:</label>
+                        <input type="range" id="text-shadow-y" min="-10" max="10" value="2">
+                        <input type="number" id="text-shadow-y-number" min="-10" max="10" value="2" class="number-input">
+                        <span id="text-shadow-y-value">2px</span>
+                    </div>
+                    
+                    <div class="setting-item" id="text-shadow-settings-blur" style="display: none;">
+                        <label for="text-shadow-blur">Размытие тени:</label>
+                        <input type="range" id="text-shadow-blur" min="0" max="20" value="4">
+                        <input type="number" id="text-shadow-blur-number" min="0" max="20" value="4" class="number-input">
+                        <span id="text-shadow-blur-value">4px</span>
+                    </div>
+                    
+                    <div class="setting-item" id="text-shadow-settings-color" style="display: none;">
+                        <label for="text-shadow-color">Цвет тени:</label>
+                        <div class="color-input-container">
+                            <input type="color" id="text-shadow-color" value="#000000" class="color-input">
+                            <input type="text" id="text-shadow-color-text" value="#000000" class="color-text-input" placeholder="#000000">
+                        </div>
+                    </div>
+                    
+                    <div class="setting-item checkbox-item">
+                        <label for="text-glow-enabled">Включить свечение текста:</label>
+                        <input type="checkbox" id="text-glow-enabled" class="checkbox-input">
+                    </div>
+                    
+                    <div class="setting-item" id="text-glow-settings" style="display: none;">
+                        <label for="text-glow-size">Размер свечения:</label>
+                        <input type="range" id="text-glow-size" min="0" max="20" value="5">
+                        <input type="number" id="text-glow-size-number" min="0" max="20" value="5" class="number-input">
+                        <span id="text-glow-size-value">5px</span>
+                    </div>
+                    
+                    <div class="setting-item" id="text-glow-settings-color" style="display: none;">
+                        <label for="text-glow-color">Цвет свечения:</label>
+                        <div class="color-input-container">
+                            <input type="color" id="text-glow-color" value="#00ffff" class="color-input">
+                            <input type="text" id="text-glow-color-text" value="#00ffff" class="color-text-input" placeholder="#00ffff">
+                        </div>
+                    </div>
+                    
+                    <div class="setting-item checkbox-item">
+                        <label for="text-stroke-enabled">Включить обводку текста:</label>
+                        <input type="checkbox" id="text-stroke-enabled" class="checkbox-input">
+                    </div>
+                    
+                    <div class="setting-item" id="text-stroke-settings" style="display: none;">
+                        <label for="text-stroke-width">Толщина обводки:</label>
+                        <input type="range" id="text-stroke-width" min="0" max="10" value="2">
+                        <input type="number" id="text-stroke-width-number" min="0" max="10" value="2" class="number-input">
+                        <span id="text-stroke-width-value">2px</span>
+                    </div>
+                    
+                    <div class="setting-item" id="text-stroke-settings-color" style="display: none;">
+                        <label for="text-stroke-color">Цвет обводки:</label>
+                        <div class="color-input-container">
+                            <input type="color" id="text-stroke-color" value="#000000" class="color-input">
+                            <input type="text" id="text-stroke-color-text" value="#000000" class="color-text-input" placeholder="#000000">
+                        </div>
+                    </div>
+                    
+                    <div class="setting-item" id="text-stroke-settings-type" style="display: none;">
+                        <label for="text-stroke-type">Тип обводки:</label>
+                        <select id="text-stroke-type" class="select-input">
+                            <option value="outline">Внешняя обводка</option>
+                            <option value="inset">Внутренняя обводка</option>
+                        </select>
                     </div>
                 </div>
                 

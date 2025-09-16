@@ -34,7 +34,9 @@ class ChatEditor {
             messageAlignment: 'left',
             borderMode: 'fit-content',
             borderAlignment: 'left',
-            chatDirection: 'bottom-to-top',
+            chatDirection: 'top-to-bottom-new-down',
+            messageSpacing: 3,
+            messageVerticalOffset: 0,
             appearAnimation: 'none',
             disappearAnimation: 'fade-out',
             // Старый параметр animationDuration удален
@@ -67,6 +69,19 @@ class ChatEditor {
             lineHeight: 1.2,
             letterSpacing: 0,
             fontColor: '#ffffff',
+            // Эффекты текста
+            textShadowEnabled: false,
+            textShadowX: 2,
+            textShadowY: 2,
+            textShadowBlur: 4,
+            textShadowColor: '#000000',
+            textGlowEnabled: false,
+            textGlowSize: 5,
+            textGlowColor: '#00ffff',
+            textStrokeEnabled: false,
+            textStrokeWidth: 2,
+            textStrokeColor: '#000000',
+            textStrokeType: 'outline',
             maxMessages: 100,
             messageSpeed: 300,
             chatWidth: 800,
@@ -86,6 +101,7 @@ class ChatEditor {
         this.demoMessagesAdded = false; // Флаг для отслеживания демо-сообщений
         this.previewMessageCount = 0;
         this.previewMaxMessages = 100;
+        this.sharedChatTestActive = false; // Флаг для отслеживания активного теста общего чата
         
         // Переменные для подключения к реальному чату
         this.previewConnected = false;
@@ -101,6 +117,9 @@ class ChatEditor {
             channelInput: document.getElementById('channel-input'),
             saveChannelBtn: document.getElementById('save-channel'),
             reconnectBtn: document.getElementById('reconnect-btn'),
+            testSharedChatBtn: document.getElementById('test-shared-chat'),
+            stopSharedChatTestBtn: document.getElementById('stop-shared-chat-test'),
+            sharedChannelsInput: document.getElementById('shared-channels-input'),
             baseURL: document.getElementById('base-url'),
             borderWidth: document.getElementById('border-width'),
             borderWidthNumber: document.getElementById('border-width-number'),
@@ -142,6 +161,12 @@ class ChatEditor {
             borderMode: document.getElementById('border-mode'),
             borderAlignment: document.getElementById('border-alignment'),
             chatDirection: document.getElementById('chat-direction'),
+            messageSpacing: document.getElementById('message-spacing'),
+            messageSpacingNumber: document.getElementById('message-spacing-number'),
+            messageSpacingValue: document.getElementById('message-spacing-value'),
+            messageVerticalOffset: document.getElementById('message-vertical-offset'),
+            messageVerticalOffsetNumber: document.getElementById('message-vertical-offset-number'),
+            messageVerticalOffsetValue: document.getElementById('message-vertical-offset-value'),
             appearAnimation: document.getElementById('appear-animation'),
             disappearAnimation: document.getElementById('disappear-animation'),
             // Старый элемент animation-duration удален, используем appearDuration
@@ -201,6 +226,32 @@ class ChatEditor {
             fontColor: document.getElementById('font-color'),
             fontColorText: document.getElementById('font-color-text'),
             fontColorPreset: document.getElementById('font-color-preset'),
+            // Эффекты текста
+            textShadowEnabled: document.getElementById('text-shadow-enabled'),
+            textShadowX: document.getElementById('text-shadow-x'),
+            textShadowXNumber: document.getElementById('text-shadow-x-number'),
+            textShadowXValue: document.getElementById('text-shadow-x-value'),
+            textShadowY: document.getElementById('text-shadow-y'),
+            textShadowYNumber: document.getElementById('text-shadow-y-number'),
+            textShadowYValue: document.getElementById('text-shadow-y-value'),
+            textShadowBlur: document.getElementById('text-shadow-blur'),
+            textShadowBlurNumber: document.getElementById('text-shadow-blur-number'),
+            textShadowBlurValue: document.getElementById('text-shadow-blur-value'),
+            textShadowColor: document.getElementById('text-shadow-color'),
+            textShadowColorText: document.getElementById('text-shadow-color-text'),
+            textGlowEnabled: document.getElementById('text-glow-enabled'),
+            textGlowSize: document.getElementById('text-glow-size'),
+            textGlowSizeNumber: document.getElementById('text-glow-size-number'),
+            textGlowSizeValue: document.getElementById('text-glow-size-value'),
+            textGlowColor: document.getElementById('text-glow-color'),
+            textGlowColorText: document.getElementById('text-glow-color-text'),
+            textStrokeEnabled: document.getElementById('text-stroke-enabled'),
+            textStrokeWidth: document.getElementById('text-stroke-width'),
+            textStrokeWidthNumber: document.getElementById('text-stroke-width-number'),
+            textStrokeWidthValue: document.getElementById('text-stroke-width-value'),
+            textStrokeColor: document.getElementById('text-stroke-color'),
+            textStrokeColorText: document.getElementById('text-stroke-color-text'),
+            textStrokeType: document.getElementById('text-stroke-type'),
             clearMessageBg1: document.getElementById('clear-message-bg-1'),
             clearMessageBg2: document.getElementById('clear-message-bg-2'),
             clearBackground: document.getElementById('clear-background'),
@@ -279,6 +330,16 @@ class ChatEditor {
         // Переподключение
         this.elements.reconnectBtn.addEventListener('click', () => {
             this.reconnectChat();
+        });
+        
+        // Тестирование общего чата
+        this.elements.testSharedChatBtn.addEventListener('click', () => {
+            this.testSharedChat();
+        });
+        
+        // Остановка теста общего чата
+        this.elements.stopSharedChatTestBtn.addEventListener('click', () => {
+            this.stopSharedChatTest();
         });
         
         // Базовый URL
@@ -489,6 +550,35 @@ class ChatEditor {
             this.updatePreview();
         });
         
+        // Настройки расстояния между сообщениями
+        this.elements.messageSpacing.addEventListener('input', (e) => {
+            this.settings.messageSpacing = parseInt(e.target.value);
+            this.elements.messageSpacingNumber.value = e.target.value;
+            this.elements.messageSpacingValue.textContent = e.target.value + 'px';
+            this.updatePreview();
+        });
+        
+        this.elements.messageSpacingNumber.addEventListener('input', (e) => {
+            this.settings.messageSpacing = parseInt(e.target.value);
+            this.elements.messageSpacing.value = e.target.value;
+            this.elements.messageSpacingValue.textContent = e.target.value + 'px';
+            this.updatePreview();
+        });
+        
+        // Настройки смещения по вертикали
+        this.elements.messageVerticalOffset.addEventListener('input', (e) => {
+            this.settings.messageVerticalOffset = parseInt(e.target.value);
+            this.elements.messageVerticalOffsetNumber.value = e.target.value;
+            this.elements.messageVerticalOffsetValue.textContent = e.target.value + 'px';
+            this.updatePreview();
+        });
+        
+        this.elements.messageVerticalOffsetNumber.addEventListener('input', (e) => {
+            this.settings.messageVerticalOffset = parseInt(e.target.value);
+            this.elements.messageVerticalOffset.value = e.target.value;
+            this.elements.messageVerticalOffsetValue.textContent = e.target.value + 'px';
+            this.updatePreview();
+        });
         
         this.elements.appearAnimation.addEventListener('change', (e) => {
             this.settings.appearAnimation = e.target.value;
@@ -806,6 +896,9 @@ class ChatEditor {
             this.showColorPresets();
         });
         
+        // Обработчики для эффектов текста
+        this.setupTextEffectsListeners();
+        
         // Кнопки для фоновых изображений сообщений удалены
         
         this.elements.clearMessageBg1.addEventListener('click', () => {
@@ -1044,11 +1137,11 @@ class ChatEditor {
             messageElement.style.backgroundColor = baseColor;
         
             // Применяем фоновые изображения если есть
-            if (backgrounds.length > 0) {
-                messageElement.style.backgroundImage = backgrounds.join(', ');
-                messageElement.style.backgroundSize = `${this.settings.messageBgSize1}, ${this.settings.messageBgSize2}`;
-                messageElement.style.backgroundPosition = `${this.settings.messageBgPosition1}, ${this.settings.messageBgPosition2}`;
-            }
+        if (backgrounds.length > 0) {
+            messageElement.style.backgroundImage = backgrounds.join(', ');
+            messageElement.style.backgroundSize = `${this.settings.messageBgSize1}, ${this.settings.messageBgSize2}`;
+            messageElement.style.backgroundPosition = `${this.settings.messageBgPosition1}, ${this.settings.messageBgPosition2}`;
+        }
         }
     }
     
@@ -1069,18 +1162,162 @@ class ChatEditor {
             this.showStatus('✅ Предпросмотр обновлен', 'success');
         }, 1000);
     }
+
+    // Тестирование общего чата
+    testSharedChat() {
+        if (!this.settings.channel) {
+            this.showStatus('❌ Сначала укажите основной канал!', 'error');
+            return;
+        }
+        
+        const channelsInput = this.elements.sharedChannelsInput.value.trim();
+        
+        if (!channelsInput) {
+            this.showStatus('❌ Укажите каналы для тестирования!', 'error');
+            return;
+        }
+        
+        // Парсим каналы из строки
+        const channels = channelsInput.split(',').map(ch => ch.trim()).filter(ch => ch.length > 0);
+        
+        if (channels.length < 2) {
+            this.showStatus('❌ Укажите минимум 2 канала!', 'error');
+            return;
+        }
+        
+        if (channels.length > 5) {
+            this.showStatus('❌ Максимум 5 каналов для тестирования!', 'error');
+            return;
+        }
+        
+        // Проверяем на дубликаты
+        const uniqueChannels = [...new Set(channels.map(ch => ch.toLowerCase()))];
+        if (uniqueChannels.length !== channels.length) {
+            this.showStatus('❌ Каналы должны быть уникальными!', 'error');
+            return;
+        }
+        
+        console.log('🧪 Запускаем тест общего чата с каналами:', channels);
+        this.showStatus(`🧪 Создаем тестовый общий чат с ${channels.length} каналами...`, 'info');
+        
+        // Активируем режим тестирования
+        this.sharedChatTestActive = true;
+        this.elements.testSharedChatBtn.style.display = 'none';
+        this.elements.stopSharedChatTestBtn.style.display = 'inline-block';
+        
+        // Очищаем предпросмотр
+        this.clearPreviewMessages();
+        
+        // Добавляем тестовые сообщения напрямую в предпросмотр
+        this.addTestSharedChatMessagesToPreview(channels).then(() => {
+            console.log('✅ Тестовые сообщения общего чата добавлены');
+        }).catch(error => {
+            console.error('❌ Ошибка при добавлении тестовых сообщений:', error);
+        });
+        
+        this.showStatus(`✅ Тестовый общий чат создан с ${channels.length} каналами! Проверьте предпросмотр`, 'success');
+    }
+
+    // Остановка теста общего чата
+    stopSharedChatTest() {
+        console.log('⏹️ Останавливаем тест общего чата');
+        this.showStatus('⏹️ Останавливаем тест общего чата...', 'info');
+        
+        // Деактивируем режим тестирования
+        this.sharedChatTestActive = false;
+        this.elements.testSharedChatBtn.style.display = 'inline-block';
+        this.elements.stopSharedChatTestBtn.style.display = 'none';
+        
+        // Очищаем предпросмотр
+        this.clearPreviewMessages();
+        
+        // Сбрасываем флаг демо-сообщений и добавляем их заново
+        this.demoMessagesAdded = false;
+        this.addDemoMessages();
+        
+        this.showStatus('✅ Тест общего чата остановлен, возвращен обычный режим', 'success');
+    }
+
+    // Добавление тестовых сообщений общего чата напрямую в предпросмотр
+    async addTestSharedChatMessagesToPreview(channels) {
+        console.log('📝 Добавляем тестовые сообщения общего чата в предпросмотр:', channels);
+        
+        // Сначала загружаем аватарки всех каналов
+        console.log('🖼️ Загружаем аватарки каналов...');
+        const avatarPromises = channels.map(channel => this.loadChannelAvatar(channel));
+        await Promise.all(avatarPromises);
+        
+        const colors = ['#ff6b6b', '#4CAF50', '#9C27B0', '#FF9800', '#00BCD4', '#E91E63', '#795548', '#607D8B'];
+        const badges = ['subscriber/12', 'moderator/1', 'subscriber/6', 'vip/1', 'subscriber/3', 'subscriber/9', 'subscriber/15', 'subscriber/24'];
+        
+        // Добавляем сообщения от каждого канала
+        channels.forEach((channel, index) => {
+            const color = colors[index % colors.length];
+            const badge = badges[index % badges.length];
+            
+            // Первое сообщение от канала
+            this.addPreviewMessage(`${channel}User1`, `Привет из чата ${channel}! 👋`, {
+                'display-name': `${channel}User1`,
+                'color': color,
+                'badges': badge,
+                'sourceChannel': channel.toLowerCase()
+            });
+            
+            // Второе сообщение от канала
+            this.addPreviewMessage(`${channel}User2`, `Крутой коллаб с ${channels.length} каналами! 🎉`, {
+                'display-name': `${channel}User2`,
+                'color': colors[(index + 1) % colors.length],
+                'badges': badges[(index + 1) % badges.length],
+                'sourceChannel': channel.toLowerCase()
+            });
+        });
+        
+        // Сообщения от пользователей основного канала
+        this.addPreviewMessage('MainChannelUser', `Общий чат с ${channels.length} каналами работает отлично! 🚀`, {
+            'display-name': 'MainChannelUser',
+            'color': '#00BCD4',
+            'badges': 'broadcaster/1',
+            'sourceChannel': this.settings.channel
+        });
+        
+        // Дополнительные сообщения для демонстрации
+        channels.forEach((channel, index) => {
+            if (index < 3) { // Ограничиваем количество дополнительных сообщений
+                this.addPreviewMessage(`${channel}User3`, `Аватарки всех ${channels.length} каналов выглядят круто! 🔥`, {
+                    'display-name': `${channel}User3`,
+                    'color': colors[(index + 2) % colors.length],
+                    'badges': badges[(index + 2) % badges.length],
+                    'sourceChannel': channel.toLowerCase()
+                });
+            }
+        });
+    }
     
     refreshPreview() {
+        console.log('🔄 Обновление предпросмотра...');
         this.showStatus('🔄 Обновление предпросмотра...', 'info');
         
+        try {
         // Применяем все настройки к предпросмотру
         this.updatePreview();
         
-        // Сбрасываем флаг и обновляем демо-сообщения
+            // Очищаем предпросмотр
+            this.clearPreviewMessages();
+            
+        // Если не подключены к чату и не активен тест общего чата, добавляем демо-сообщения
+        if (!this.previewConnected && !this.sharedChatTestActive) {
+        this.addDemoMessages();
+        }
         
+            console.log('✅ Предпросмотр обновлен успешно');
         setTimeout(() => {
             this.showStatus('✅ Предпросмотр обновлен', 'success');
-        }, 2000);
+            }, 1000);
+            
+        } catch (error) {
+            console.error('❌ Ошибка при обновлении предпросмотра:', error);
+            this.showStatus('❌ Ошибка при обновлении предпросмотра', 'error');
+        }
     }
     
     updatePreview() {
@@ -1171,8 +1408,20 @@ class ChatEditor {
         console.log('Preview chatContainer element:', container);
         if (this.settings.hideBackground) {
             container.classList.add('no-background');
+            // Принудительно применяем прозрачный фон
+            container.style.background = 'transparent !important';
+            container.style.backgroundColor = 'transparent !important';
+            container.style.backgroundImage = 'none !important';
+            container.style.backdropFilter = 'none !important';
+            console.log('✅ Фон скрыт в предпросмотре');
         } else {
             container.classList.remove('no-background');
+            // Сбрасываем принудительные стили
+            container.style.background = '';
+            container.style.backgroundColor = '';
+            container.style.backgroundImage = '';
+            container.style.backdropFilter = '';
+            console.log('✅ Фон показан в предпросмотре');
             
             if (this.settings.backgroundImage) {
                 // Применяем фоновое изображение с прозрачностью
@@ -1321,8 +1570,26 @@ class ChatEditor {
         this.elements.previewChatMessages.style.letterSpacing = this.settings.letterSpacing + 'px';
         this.elements.previewChatMessages.style.color = this.settings.fontColor;
         
+        // Стили для предотвращения сжатия контейнера
+        this.elements.previewChatMessages.style.overflowX = 'visible';
+        this.elements.previewChatMessages.style.overflowY = 'auto';
+        this.elements.previewChatMessages.style.width = 'auto';
+        this.elements.previewChatMessages.style.minWidth = '0';
+        this.elements.previewChatMessages.style.maxWidth = 'none';
+        
+        // Применяем эффекты текста к контейнеру сообщений
+        this.applyTextEffectsToPreview();
+        
         // Обновляем все существующие сообщения в предпросмотре
         this.updateExistingPreviewMessages();
+        
+        // Принудительно применяем настройки фона в конце
+        if (this.settings.hideBackground) {
+            container.style.setProperty('background', 'transparent', 'important');
+            container.style.setProperty('background-color', 'transparent', 'important');
+            container.style.setProperty('background-image', 'none', 'important');
+            container.style.setProperty('backdrop-filter', 'none', 'important');
+        }
         
         // Добавляем демо-сообщения для предпросмотра только один раз
         if (!this.demoMessagesAdded) {
@@ -1336,6 +1603,35 @@ class ChatEditor {
         if (messagesContainer) {
             messagesContainer.innerHTML = '';
             this.previewMessageCount = 0;
+        }
+    }
+    
+    // Метод для добавления сообщений в зависимости от направления чата в предпросмотре
+    addPreviewMessageByDirection(messageElement) {
+        const messagesContainer = this.elements.previewChatMessages;
+        if (!messagesContainer) return;
+        
+        switch (this.settings.chatDirection) {
+            case 'top-to-bottom-new-down':
+                // Сверху вниз, новые уходят вниз: добавляем в конец
+                messagesContainer.appendChild(messageElement);
+                break;
+            case 'top-to-bottom-old-down':
+                // Сверху вниз, старые уходят вниз: добавляем в начало
+                messagesContainer.insertBefore(messageElement, messagesContainer.firstChild);
+                break;
+            case 'bottom-to-top-new-up':
+                // Снизу вверх, новые уходят наверх: добавляем в начало
+                messagesContainer.insertBefore(messageElement, messagesContainer.firstChild);
+                break;
+            case 'bottom-to-top-old-up':
+                // Снизу вверх, старые уходят наверх: добавляем в конец
+                messagesContainer.appendChild(messageElement);
+                break;
+            default:
+                // По умолчанию добавляем в конец
+                messagesContainer.appendChild(messageElement);
+                break;
         }
     }
     
@@ -1402,9 +1698,9 @@ class ChatEditor {
         messageElement.classList.add(`align-${this.settings.messageAlignment}`);
         
         // Применяем режим рамки
-        if (this.settings.borderMode === 'full-width') {
+            if (this.settings.borderMode === 'full-width') {
             messageElement.classList.add('border-full-width');
-        } else {
+            } else {
             messageElement.classList.add('border-fit-content');
         }
         
@@ -1419,6 +1715,21 @@ class ChatEditor {
         messageElement.style.letterSpacing = this.settings.letterSpacing + 'px';
         messageElement.style.color = this.settings.fontColor;
         
+        // Стили для предотвращения сжатия
+        messageElement.style.width = 'auto';
+        messageElement.style.minWidth = '0';
+        messageElement.style.maxWidth = 'none';
+        messageElement.style.whiteSpace = 'pre-wrap'; // Разрешаем перенос строк
+        messageElement.style.overflow = 'visible';
+        messageElement.style.wordWrap = 'break-word';
+        messageElement.style.wordBreak = 'break-word';
+        messageElement.style.overflowWrap = 'break-word';
+        messageElement.style.hyphens = 'auto';
+        
+        // Применяем расстояние между сообщениями и смещение по вертикали
+        messageElement.style.marginBottom = this.settings.messageSpacing + 'px';
+        messageElement.style.transform = `translateY(${this.settings.messageVerticalOffset}px)`;
+        
         // Определяем цвет пользователя
         const userColor = userData.color || this.getDefaultUserColor(username);
         
@@ -1428,9 +1739,9 @@ class ChatEditor {
         // Используем display-name если есть, иначе username
         const displayName = userData['display-name'] || username;
         
-        // Добавляем значок канала только если это общий чат (несколько каналов)
+        // Добавляем значок канала для общего чата только во время тестирования
         let channelBadge = '';
-        if (this.settings.channels && this.settings.channels.length > 1 && userData.sourceChannel && userData.sourceChannel !== this.settings.channel) {
+        if (this.sharedChatTestActive && userData.sourceChannel && userData.sourceChannel !== this.settings.channel) {
             // Получаем аватарку канала
             const channelAvatar = this.getChannelAvatar(userData.sourceChannel);
             channelBadge = `<span class="channel-badge" title="Канал: ${userData.sourceChannel}">${channelAvatar}</span>`;
@@ -1451,7 +1762,8 @@ class ChatEditor {
         
         messageElement.innerHTML = messageHtml;
         
-        messagesContainer.appendChild(messageElement);
+        // Добавляем сообщение в зависимости от направления чата
+        this.addPreviewMessageByDirection(messageElement);
         this.previewMessageCount++;
         
         // Синхронизируем счетчик с реальным количеством сообщений
@@ -1497,32 +1809,52 @@ class ChatEditor {
         // Удаляем старые сообщения если их слишком много
         this.syncPreviewMessageCount(); // Синхронизируем счетчик перед проверкой
         if (this.previewMessageCount > this.previewMaxMessages) {
-            const firstMessage = messagesContainer.querySelector('.preview-message');
-            if (firstMessage) {
+            // Выбираем сообщение для удаления в зависимости от направления чата
+            let messageToRemove = null;
+            const messages = messagesContainer.querySelectorAll('.preview-message');
+            
+            switch (this.settings.chatDirection) {
+                case 'top-to-bottom-new-down':
+                case 'bottom-to-top-new-up':
+                    // Удаляем самое старое (первое) сообщение
+                    messageToRemove = messages[0];
+                    break;
+                case 'top-to-bottom-old-down':
+                case 'bottom-to-top-old-up':
+                    // Удаляем самое новое (последнее) сообщение
+                    messageToRemove = messages[messages.length - 1];
+                    break;
+                default:
+                    // По умолчанию удаляем самое старое
+                    messageToRemove = messages[0];
+                    break;
+            }
+            
+            if (messageToRemove) {
                 if (this.settings.fadeMessages && this.settings.disappearAnimation !== 'none') {
                     // Добавляем анимацию исчезновения с правильной длительностью
                     const animationName = this.getAnimationName(this.settings.disappearAnimation);
                     // Сбрасываем все предыдущие анимации и стили
-                    firstMessage.style.animation = '';
-                    firstMessage.style.animationName = '';
-                    firstMessage.style.animationDuration = '';
-                    firstMessage.style.animationDelay = '';
-                    firstMessage.style.animationFillMode = '';
-                    firstMessage.style.animationTimingFunction = '';
+                    messageToRemove.style.animation = '';
+                    messageToRemove.style.animationName = '';
+                    messageToRemove.style.animationDuration = '';
+                    messageToRemove.style.animationDelay = '';
+                    messageToRemove.style.animationFillMode = '';
+                    messageToRemove.style.animationTimingFunction = '';
                     // Убираем классы анимаций появления
-                    firstMessage.classList.remove('no-animation');
+                    messageToRemove.classList.remove('no-animation');
                     // Применяем новую анимацию исчезновения
-                    firstMessage.style.animation = `${animationName} ${this.settings.disappearDuration}ms ease-in forwards`;
+                    messageToRemove.style.animation = `${animationName} ${this.settings.disappearDuration}ms ease-in forwards`;
                     // Удаляем после анимации
             setTimeout(() => {
-                        if (firstMessage.parentNode) {
-                            firstMessage.remove();
+                        if (messageToRemove.parentNode) {
+                            messageToRemove.remove();
                             this.syncPreviewMessageCount(); // Синхронизируем после удаления
                         }
                     }, this.settings.disappearDuration);
                 } else {
                     // Обычное удаление без анимации
-                    firstMessage.remove();
+                    messageToRemove.remove();
                     this.syncPreviewMessageCount(); // Синхронизируем после удаления
                 }
             }
@@ -1593,10 +1925,17 @@ class ChatEditor {
             console.log('Загружаем значки для:', channelId);
             
             // Получаем глобальные бейджи через новый Helix API
-            const globalResponse = await fetch('https://api.twitch.tv/helix/chat/badges/global', {
-                headers: {
+            const headers = {
                     'Client-ID': this.twitchClientId
+            };
+            
+            // Добавляем OAuth токен если есть
+            if (this.twitchOAuthToken) {
+                headers['Authorization'] = `Bearer ${this.twitchOAuthToken}`;
                 }
+            
+            const globalResponse = await fetch('https://api.twitch.tv/helix/chat/badges/global', {
+                headers: headers
             });
             
             let globalBadges = {};
@@ -1609,20 +1948,21 @@ class ChatEditor {
                 console.error('Ошибка загрузки глобальных значков:', globalResponse.status);
             }
             
-            // Получаем бейджи канала
+            // Получаем бейджи канала (включая значки сообщества)
             let channelBadges = {};
             if (channelId && channelId !== 'global') {
                 const channelResponse = await fetch(`https://api.twitch.tv/helix/chat/badges?broadcaster_id=${channelId}`, {
-                    headers: {
-                        'Client-ID': this.twitchClientId
-                    }
+                    headers: headers
                 });
                 
                 if (channelResponse.ok) {
                     const channelData = await channelResponse.json();
                     // Преобразуем данные в нужный формат
                     channelBadges = this.transformBadgeData(channelData.data || []);
-                    console.log('Значки канала загружены:', Object.keys(channelBadges));
+                    console.log('Значки канала и сообщества загружены:', Object.keys(channelBadges));
+                    
+                    // Анализируем значки сообщества
+                    this.analyzeCommunityBadgesInEditor(channelBadges);
                 } else {
                     console.error('Ошибка загрузки значков канала:', channelResponse.status);
                 }
@@ -1662,6 +2002,38 @@ class ChatEditor {
         });
         
         return transformed;
+    }
+    
+    // Анализ значков сообщества в редакторе
+    analyzeCommunityBadgesInEditor(communityBadges) {
+        console.log('🔍 Анализируем значки сообщества в редакторе...');
+        
+        const badgeTypes = Object.keys(communityBadges);
+        console.log(`📊 Всего значков сообщества: ${badgeTypes.length}`);
+        
+        badgeTypes.forEach(badgeType => {
+            const badge = communityBadges[badgeType];
+            const versions = Object.keys(badge.versions);
+            console.log(`🏷️ ${badgeType}: ${versions.length} версий`);
+            
+            // Специальная обработка для subscriber бейджей
+            if (badgeType === 'subscriber') {
+                console.log('💎 Найдены subscriber бейджи сообщества в редакторе');
+                versions.forEach(version => {
+                    const versionData = badge.versions[version];
+                    console.log(`  📅 ${version} месяцев: ${versionData.title || 'Подписчик'}`);
+                });
+            }
+            
+            // Обработка других типов значков сообщества
+            if (badgeType !== 'subscriber' && badgeType !== 'moderator' && badgeType !== 'vip') {
+                console.log(`🎨 Найден кастомный значок сообщества: ${badgeType}`);
+                versions.forEach(version => {
+                    const versionData = badge.versions[version];
+                    console.log(`  🎯 Версия ${version}: ${versionData.title || badgeType}`);
+                });
+            }
+        });
     }
     
     async getChannelId(channelName) {
@@ -1945,6 +2317,8 @@ class ChatEditor {
         params.set('borderMode', this.settings.borderMode);
         params.set('borderAlignment', this.settings.borderAlignment);
         params.set('chatDirection', this.settings.chatDirection);
+        params.set('messageSpacing', this.settings.messageSpacing);
+        params.set('messageVerticalOffset', this.settings.messageVerticalOffset);
         
         // Настройки анимаций
         params.set('appearAnimation', this.settings.appearAnimation);
@@ -1981,6 +2355,20 @@ class ChatEditor {
         params.set('lineHeight', this.settings.lineHeight);
         params.set('letterSpacing', this.settings.letterSpacing);
         params.set('fontColor', this.settings.fontColor);
+        
+        // Эффекты текста
+        params.set('textShadowEnabled', this.settings.textShadowEnabled);
+        params.set('textShadowX', this.settings.textShadowX);
+        params.set('textShadowY', this.settings.textShadowY);
+        params.set('textShadowBlur', this.settings.textShadowBlur);
+        params.set('textShadowColor', this.settings.textShadowColor);
+        params.set('textGlowEnabled', this.settings.textGlowEnabled);
+        params.set('textGlowSize', this.settings.textGlowSize);
+        params.set('textGlowColor', this.settings.textGlowColor);
+        params.set('textStrokeEnabled', this.settings.textStrokeEnabled);
+        params.set('textStrokeWidth', this.settings.textStrokeWidth);
+        params.set('textStrokeColor', this.settings.textStrokeColor);
+        params.set('textStrokeType', this.settings.textStrokeType);
         
         // Настройки чата
         params.set('maxMessages', this.settings.maxMessages);
@@ -2062,6 +2450,11 @@ class ChatEditor {
     applySettingsToUI() {
         this.elements.channelInput.value = this.settings.channel;
         
+        // Базовый URL
+        if (this.elements.baseURL) {
+            this.elements.baseURL.value = this.settings.baseURL || '';
+        }
+        
         // Рамка
         this.elements.borderWidth.value = this.settings.borderWidth;
         this.elements.borderWidthNumber.value = this.settings.borderWidth;
@@ -2103,6 +2496,21 @@ class ChatEditor {
         if (this.elements.borderMode) this.elements.borderMode.value = this.settings.borderMode;
         if (this.elements.borderAlignment) this.elements.borderAlignment.value = this.settings.borderAlignment;
         if (this.elements.chatDirection) this.elements.chatDirection.value = this.settings.chatDirection;
+        
+        // Настройки расстояния между сообщениями
+        if (this.elements.messageSpacing) {
+            this.elements.messageSpacing.value = this.settings.messageSpacing;
+            this.elements.messageSpacingNumber.value = this.settings.messageSpacing;
+            this.elements.messageSpacingValue.textContent = this.settings.messageSpacing + 'px';
+        }
+        
+        // Настройки смещения по вертикали
+        if (this.elements.messageVerticalOffset) {
+            this.elements.messageVerticalOffset.value = this.settings.messageVerticalOffset;
+            this.elements.messageVerticalOffsetNumber.value = this.settings.messageVerticalOffset;
+            this.elements.messageVerticalOffsetValue.textContent = this.settings.messageVerticalOffset + 'px';
+        }
+        
         if (this.elements.appearAnimation) this.elements.appearAnimation.value = this.settings.appearAnimation;
         if (this.elements.disappearAnimation) this.elements.disappearAnimation.value = this.settings.disappearAnimation;
         // Старый элемент animationDuration удален
@@ -2162,6 +2570,40 @@ class ChatEditor {
         this.elements.fontColor.value = this.settings.fontColor;
         this.elements.fontColorText.value = this.settings.fontColor;
         
+        // Эффекты текста
+        this.elements.textShadowEnabled.checked = this.settings.textShadowEnabled;
+        this.elements.textShadowX.value = this.settings.textShadowX;
+        this.elements.textShadowXNumber.value = this.settings.textShadowX;
+        this.elements.textShadowXValue.textContent = this.settings.textShadowX + 'px';
+        this.elements.textShadowY.value = this.settings.textShadowY;
+        this.elements.textShadowYNumber.value = this.settings.textShadowY;
+        this.elements.textShadowYValue.textContent = this.settings.textShadowY + 'px';
+        this.elements.textShadowBlur.value = this.settings.textShadowBlur;
+        this.elements.textShadowBlurNumber.value = this.settings.textShadowBlur;
+        this.elements.textShadowBlurValue.textContent = this.settings.textShadowBlur + 'px';
+        this.elements.textShadowColor.value = this.settings.textShadowColor;
+        this.elements.textShadowColorText.value = this.settings.textShadowColor;
+        
+        this.elements.textGlowEnabled.checked = this.settings.textGlowEnabled;
+        this.elements.textGlowSize.value = this.settings.textGlowSize;
+        this.elements.textGlowSizeNumber.value = this.settings.textGlowSize;
+        this.elements.textGlowSizeValue.textContent = this.settings.textGlowSize + 'px';
+        this.elements.textGlowColor.value = this.settings.textGlowColor;
+        this.elements.textGlowColorText.value = this.settings.textGlowColor;
+        
+        this.elements.textStrokeEnabled.checked = this.settings.textStrokeEnabled;
+        this.elements.textStrokeWidth.value = this.settings.textStrokeWidth;
+        this.elements.textStrokeWidthNumber.value = this.settings.textStrokeWidth;
+        this.elements.textStrokeWidthValue.textContent = this.settings.textStrokeWidth + 'px';
+        this.elements.textStrokeColor.value = this.settings.textStrokeColor;
+        this.elements.textStrokeColorText.value = this.settings.textStrokeColor;
+        this.elements.textStrokeType.value = this.settings.textStrokeType;
+        
+        // Переключаем видимость настроек
+        this.toggleTextShadowSettings();
+        this.toggleTextGlowSettings();
+        this.toggleTextStrokeSettings();
+        
         // Сообщения
         this.elements.maxMessages.value = this.settings.maxMessages;
         this.elements.maxMessagesNumber.value = this.settings.maxMessages;
@@ -2212,7 +2654,7 @@ class ChatEditor {
                 messageAlignment: 'left',
                 borderMode: 'fit-content',
                 borderAlignment: 'left',
-                chatDirection: 'bottom-to-top',
+                chatDirection: 'top-to-bottom-new-down',
                 appearAnimation: 'none',
                 disappearAnimation: 'fade-out',
                 appearDuration: 1000,
@@ -2772,6 +3214,14 @@ class ChatEditor {
             
             // Очищаем предпросмотр и добавляем демо-сообщения
             this.clearPreviewMessages();
+            
+            // Если был активен тест общего чата, останавливаем его
+            if (this.sharedChatTestActive) {
+                this.sharedChatTestActive = false;
+                this.elements.testSharedChatBtn.style.display = 'inline-block';
+                this.elements.stopSharedChatTestBtn.style.display = 'none';
+            }
+            
             this.addDemoMessages();
             
             this.showStatus('🔌 Отключено от чата', 'info');
@@ -2797,13 +3247,115 @@ class ChatEditor {
         if (!this.elements.previewChatMessages) return;
         
         const messages = this.elements.previewChatMessages.querySelectorAll('.preview-message');
-        const maxMessages = 8; // Максимальное количество видимых сообщений
+        const maxMessages = this.settings.maxMessages || 100; // Используем настройку maxMessages
         
         if (messages.length > maxMessages) {
-            // Удаляем самые старые сообщения
-            for (let i = 0; i < messages.length - maxMessages; i++) {
-                messages[i].remove();
+            // Удаляем сообщения в зависимости от направления чата
+            const messagesToRemove = messages.length - maxMessages;
+            for (let i = 0; i < messagesToRemove; i++) {
+                let messageToRemove = null;
+                
+                switch (this.settings.chatDirection) {
+                    case 'top-to-bottom-new-down':
+                    case 'bottom-to-top-new-up':
+                        // Удаляем самые старые (первые) сообщения
+                        messageToRemove = messages[i];
+                        break;
+                    case 'top-to-bottom-old-down':
+                    case 'bottom-to-top-old-up':
+                        // Удаляем самые новые (последние) сообщения
+                        messageToRemove = messages[messages.length - 1 - i];
+                        break;
+                    default:
+                        // По умолчанию удаляем самые старые
+                        messageToRemove = messages[i];
+                        break;
+                }
+                
+                if (messageToRemove) {
+                    messageToRemove.remove();
+                }
             }
+            this.syncPreviewMessageCount();
+        }
+        
+        // Агрессивная проверка: удаляем сообщения пока они не помещаются в контейнер
+        const chatContainer = this.elements.previewChatMessages;
+        const containerHeight = chatContainer.clientHeight;
+        
+        // Проверяем и удаляем сообщения, которые выходят за рамки на 10-20%
+        this.removePreviewMessagesOutsideBounds();
+    }
+    
+    removePreviewMessagesOutsideBounds() {
+        if (!this.elements.previewChatMessages) return;
+        
+        const chatContainer = this.elements.previewChatMessages;
+        const containerRect = chatContainer.getBoundingClientRect();
+        const containerTop = containerRect.top;
+        const containerBottom = containerRect.bottom;
+        
+        const messages = chatContainer.querySelectorAll('.preview-message');
+        let removedCount = 0;
+        
+        // Определяем направление чата
+        const direction = this.settings.chatDirection;
+        
+        messages.forEach((message, index) => {
+            const messageRect = message.getBoundingClientRect();
+            const messageTop = messageRect.top;
+            const messageBottom = messageRect.bottom;
+            
+            let shouldRemove = false;
+            let reason = '';
+            
+            switch (direction) {
+                case 'top-to-bottom-new-down':
+                    // Сверху вниз, новые уходят вниз: удаляем сообщения, которые выходят за нижнюю границу
+                    if (messageBottom > containerBottom) {
+                        shouldRemove = true;
+                        reason = 'выходит за нижнюю границу (новые вниз)';
+                    }
+                    break;
+                case 'top-to-bottom-old-down':
+                    // Сверху вниз, старые уходят вниз: удаляем сообщения, которые выходят за нижнюю границу
+                    if (messageBottom > containerBottom) {
+                        shouldRemove = true;
+                        reason = 'выходит за нижнюю границу (старые вниз)';
+                    }
+                    break;
+                case 'bottom-to-top-new-up':
+                    // Снизу вверх, новые уходят наверх: удаляем сообщения, которые выходят за верхнюю границу
+                    if (messageTop < containerTop) {
+                        shouldRemove = true;
+                        reason = 'выходит за верхнюю границу (новые наверх)';
+                    }
+                    break;
+                case 'bottom-to-top-old-up':
+                    // Снизу вверх, старые уходят наверх: удаляем сообщения, которые выходят за верхнюю границу
+                    if (messageTop < containerTop) {
+                        shouldRemove = true;
+                        reason = 'выходит за верхнюю границу (старые наверх)';
+                    }
+                    break;
+                default:
+                    // По умолчанию: удаляем сообщения, которые касаются любой границы
+                    if (messageTop < containerTop || messageBottom > containerBottom) {
+                        shouldRemove = true;
+                        reason = 'касается границы';
+                    }
+                    break;
+            }
+            
+            if (shouldRemove) {
+                console.log(`🗑️ Удалено сообщение предпросмотра ${index + 1}, которое ${reason}`);
+                message.remove();
+                removedCount++;
+            }
+        });
+        
+        if (removedCount > 0) {
+            console.log(`🗑️ Удалено ${removedCount} сообщений предпросмотра (направление: ${this.settings.chatDirection})`);
             this.syncPreviewMessageCount();
         }
     }
@@ -2821,6 +3373,21 @@ class ChatEditor {
             message.style.lineHeight = this.settings.lineHeight;
             message.style.letterSpacing = this.settings.letterSpacing + 'px';
             message.style.color = this.settings.fontColor;
+            
+            // Стили для предотвращения сжатия
+            message.style.width = 'auto';
+            message.style.minWidth = '0';
+            message.style.maxWidth = 'none';
+            message.style.whiteSpace = 'pre-wrap'; // Разрешаем перенос строк
+            message.style.overflow = 'visible';
+            message.style.wordWrap = 'break-word';
+            message.style.wordBreak = 'break-word';
+            message.style.overflowWrap = 'break-word';
+            message.style.hyphens = 'auto';
+            
+            // Применяем расстояние между сообщениями и смещение по вертикали
+            message.style.marginBottom = this.settings.messageSpacing + 'px';
+            message.style.transform = `translateY(${this.settings.messageVerticalOffset}px)`;
             
             // Обновляем выравнивание сообщения
             message.className = message.className.replace(/align-\w+/g, '');
@@ -3039,9 +3606,78 @@ class ChatEditor {
         return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
+    // Кэш для аватарок каналов
+    channelAvatars = new Map();
+
     getChannelAvatar(channelName) {
-        // Возвращаем простую иконку канала для предпросмотра
-        return `<span class="channel-avatar" title="Канал: ${channelName}">📺</span>`;
+        // Проверяем кэш
+        if (this.channelAvatars.has(channelName.toLowerCase())) {
+            const avatarUrl = this.channelAvatars.get(channelName.toLowerCase());
+            return `<img class="channel-avatar" src="${avatarUrl}" alt="${channelName}" title="Канал: ${channelName}" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';"><span class="channel-avatar-fallback" style="display:none; font-size: 1.3em; align-items: center; justify-content: center;">📺</span>`;
+        }
+        
+        // Если нет в кэше, загружаем аватарку
+        this.loadChannelAvatar(channelName);
+        
+        // Возвращаем заглушку пока загружается
+        return `<span class="channel-avatar" title="Канал: ${channelName}" style="font-size: 1.3em; display: inline-flex; align-items: center; justify-content: center;">📺</span>`;
+    }
+
+    // Загрузка аватарки канала через Twitch API
+    async loadChannelAvatar(channelName) {
+        try {
+            console.log('🖼️ Загружаем аватарку канала:', channelName);
+            
+            // Используем те же токены что и в основном чате
+            const twitchClientId = 'ixowm4lsi8n8c07c5q6o9wajawma2m';
+            const twitchOAuthToken = '3907ydvzaj8du83lv2fqvy6uk6151s';
+            
+            const response = await fetch(`https://api.twitch.tv/helix/users?login=${channelName}`, {
+                headers: {
+                    'Client-ID': twitchClientId,
+                    'Authorization': `Bearer ${twitchOAuthToken}`
+                }
+            });
+            
+            if (!response.ok) {
+                console.log('❌ Ошибка получения аватарки канала:', response.status);
+                return;
+            }
+            
+            const data = await response.json();
+            
+            if (data.data && data.data.length > 0) {
+                const user = data.data[0];
+                const avatarUrl = user.profile_image_url;
+                
+                // Сохраняем в кэш
+                this.channelAvatars.set(channelName.toLowerCase(), avatarUrl);
+                
+                console.log('✅ Аватарка канала загружена:', channelName, avatarUrl);
+                
+                // Обновляем все сообщения с этим каналом
+                this.updateChannelAvatarsInPreview(channelName, avatarUrl);
+            }
+            
+        } catch (error) {
+            console.error('❌ Ошибка при загрузке аватарки канала:', error);
+        }
+    }
+
+    // Обновление аватарок канала в предпросмотре
+    updateChannelAvatarsInPreview(channelName, avatarUrl) {
+        const messages = this.elements.previewChatMessages.querySelectorAll(`[data-source-channel="${channelName.toLowerCase()}"]`);
+        
+        messages.forEach(message => {
+            const channelBadge = message.querySelector('.channel-badge');
+            if (channelBadge) {
+                const avatarElement = channelBadge.querySelector('.channel-avatar');
+                if (avatarElement && avatarElement.tagName === 'SPAN') {
+                    // Заменяем заглушку на реальную аватарку
+                    avatarElement.outerHTML = `<img class="channel-avatar" src="${avatarUrl}" alt="${channelName}" title="Канал: ${channelName}" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';"><span class="channel-avatar-fallback" style="display:none; font-size: 1.3em; align-items: center; justify-content: center;">📺</span>`;
+                }
+            }
+        });
     }
 
     loadBadgeDirectly(badgeType, badgeVersion, badgeElements) {
@@ -3233,6 +3869,267 @@ class ChatEditor {
     updatePreviewStatus(status, text) {
         this.elements.previewStatus.textContent = text;
         this.elements.previewStatus.className = 'preview-status ' + status;
+    }
+    
+    // Настройка обработчиков для эффектов текста
+    setupTextEffectsListeners() {
+        // Тень текста
+        this.elements.textShadowEnabled.addEventListener('change', (e) => {
+            this.settings.textShadowEnabled = e.target.checked;
+            this.toggleTextShadowSettings();
+            this.updatePreview();
+        });
+        
+        // Смещение тени по X
+        this.elements.textShadowX.addEventListener('input', (e) => {
+            this.settings.textShadowX = parseInt(e.target.value);
+            this.elements.textShadowXNumber.value = this.settings.textShadowX;
+            this.elements.textShadowXValue.textContent = this.settings.textShadowX + 'px';
+            this.updatePreview();
+        });
+        
+        this.elements.textShadowXNumber.addEventListener('input', (e) => {
+            this.settings.textShadowX = parseInt(e.target.value);
+            this.elements.textShadowX.value = this.settings.textShadowX;
+            this.elements.textShadowXValue.textContent = this.settings.textShadowX + 'px';
+            this.updatePreview();
+        });
+        
+        // Смещение тени по Y
+        this.elements.textShadowY.addEventListener('input', (e) => {
+            this.settings.textShadowY = parseInt(e.target.value);
+            this.elements.textShadowYNumber.value = this.settings.textShadowY;
+            this.elements.textShadowYValue.textContent = this.settings.textShadowY + 'px';
+            this.updatePreview();
+        });
+        
+        this.elements.textShadowYNumber.addEventListener('input', (e) => {
+            this.settings.textShadowY = parseInt(e.target.value);
+            this.elements.textShadowY.value = this.settings.textShadowY;
+            this.elements.textShadowYValue.textContent = this.settings.textShadowY + 'px';
+            this.updatePreview();
+        });
+        
+        // Размытие тени
+        this.elements.textShadowBlur.addEventListener('input', (e) => {
+            this.settings.textShadowBlur = parseInt(e.target.value);
+            this.elements.textShadowBlurNumber.value = this.settings.textShadowBlur;
+            this.elements.textShadowBlurValue.textContent = this.settings.textShadowBlur + 'px';
+            this.updatePreview();
+        });
+        
+        this.elements.textShadowBlurNumber.addEventListener('input', (e) => {
+            this.settings.textShadowBlur = parseInt(e.target.value);
+            this.elements.textShadowBlur.value = this.settings.textShadowBlur;
+            this.elements.textShadowBlurValue.textContent = this.settings.textShadowBlur + 'px';
+            this.updatePreview();
+        });
+        
+        // Цвет тени
+        this.elements.textShadowColor.addEventListener('input', (e) => {
+            this.settings.textShadowColor = e.target.value;
+            this.elements.textShadowColorText.value = e.target.value;
+            this.updatePreview();
+        });
+        
+        this.elements.textShadowColorText.addEventListener('input', (e) => {
+            const color = e.target.value;
+            if (this.isValidColor(color)) {
+                this.settings.textShadowColor = color;
+                this.elements.textShadowColor.value = color;
+                this.updatePreview();
+            }
+        });
+        
+        // Свечение текста
+        this.elements.textGlowEnabled.addEventListener('change', (e) => {
+            this.settings.textGlowEnabled = e.target.checked;
+            this.toggleTextGlowSettings();
+            this.updatePreview();
+        });
+        
+        // Размер свечения
+        this.elements.textGlowSize.addEventListener('input', (e) => {
+            this.settings.textGlowSize = parseInt(e.target.value);
+            this.elements.textGlowSizeNumber.value = this.settings.textGlowSize;
+            this.elements.textGlowSizeValue.textContent = this.settings.textGlowSize + 'px';
+            this.updatePreview();
+        });
+        
+        this.elements.textGlowSizeNumber.addEventListener('input', (e) => {
+            this.settings.textGlowSize = parseInt(e.target.value);
+            this.elements.textGlowSize.value = this.settings.textGlowSize;
+            this.elements.textGlowSizeValue.textContent = this.settings.textGlowSize + 'px';
+            this.updatePreview();
+        });
+        
+        // Цвет свечения
+        this.elements.textGlowColor.addEventListener('input', (e) => {
+            this.settings.textGlowColor = e.target.value;
+            this.elements.textGlowColorText.value = e.target.value;
+            this.updatePreview();
+        });
+        
+        this.elements.textGlowColorText.addEventListener('input', (e) => {
+            const color = e.target.value;
+            if (this.isValidColor(color)) {
+                this.settings.textGlowColor = color;
+                this.elements.textGlowColor.value = color;
+                this.updatePreview();
+            }
+        });
+        
+        // Обводка текста
+        this.elements.textStrokeEnabled.addEventListener('change', (e) => {
+            this.settings.textStrokeEnabled = e.target.checked;
+            this.toggleTextStrokeSettings();
+            this.updatePreview();
+        });
+        
+        // Толщина обводки
+        this.elements.textStrokeWidth.addEventListener('input', (e) => {
+            this.settings.textStrokeWidth = parseInt(e.target.value);
+            this.elements.textStrokeWidthNumber.value = this.settings.textStrokeWidth;
+            this.elements.textStrokeWidthValue.textContent = this.settings.textStrokeWidth + 'px';
+            this.updatePreview();
+        });
+        
+        this.elements.textStrokeWidthNumber.addEventListener('input', (e) => {
+            this.settings.textStrokeWidth = parseInt(e.target.value);
+            this.elements.textStrokeWidth.value = this.settings.textStrokeWidth;
+            this.elements.textStrokeWidthValue.textContent = this.settings.textStrokeWidth + 'px';
+            this.updatePreview();
+        });
+        
+        // Цвет обводки
+        this.elements.textStrokeColor.addEventListener('input', (e) => {
+            this.settings.textStrokeColor = e.target.value;
+            this.elements.textStrokeColorText.value = e.target.value;
+            this.updatePreview();
+        });
+        
+        this.elements.textStrokeColorText.addEventListener('input', (e) => {
+            const color = e.target.value;
+            if (this.isValidColor(color)) {
+                this.settings.textStrokeColor = color;
+                this.elements.textStrokeColor.value = color;
+                this.updatePreview();
+            }
+        });
+        
+        // Тип обводки
+        this.elements.textStrokeType.addEventListener('change', (e) => {
+            this.settings.textStrokeType = e.target.value;
+            this.updatePreview();
+        });
+    }
+    
+    // Переключение видимости настроек тени
+    toggleTextShadowSettings() {
+        const settings = [
+            'text-shadow-settings',
+            'text-shadow-settings-y',
+            'text-shadow-settings-blur',
+            'text-shadow-settings-color'
+        ];
+        
+        settings.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.style.display = this.settings.textShadowEnabled ? 'block' : 'none';
+            }
+        });
+    }
+    
+    // Переключение видимости настроек свечения
+    toggleTextGlowSettings() {
+        const settings = [
+            'text-glow-settings',
+            'text-glow-settings-color'
+        ];
+        
+        settings.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.style.display = this.settings.textGlowEnabled ? 'block' : 'none';
+            }
+        });
+    }
+    
+    // Переключение видимости настроек обводки
+    toggleTextStrokeSettings() {
+        const settings = [
+            'text-stroke-settings',
+            'text-stroke-settings-color',
+            'text-stroke-settings-type'
+        ];
+        
+        settings.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.style.display = this.settings.textStrokeEnabled ? 'block' : 'none';
+            }
+        });
+    }
+    
+    // Применение эффектов текста к предпросмотру
+    applyTextEffectsToPreview() {
+        if (!this.elements.previewChatMessages) return;
+        
+        const messagesContainer = this.elements.previewChatMessages;
+        
+        // Сбрасываем все эффекты
+        messagesContainer.style.textShadow = '';
+        messagesContainer.style.textStroke = '';
+        messagesContainer.style.webkitTextStroke = '';
+        
+        // Применяем тень текста
+        if (this.settings.textShadowEnabled) {
+            const shadow = `${this.settings.textShadowX}px ${this.settings.textShadowY}px ${this.settings.textShadowBlur}px ${this.settings.textShadowColor}`;
+            messagesContainer.style.textShadow = shadow;
+        }
+        
+        // Применяем свечение текста
+        if (this.settings.textGlowEnabled) {
+            const glow = `0 0 ${this.settings.textGlowSize}px ${this.settings.textGlowColor}`;
+            if (this.settings.textShadowEnabled) {
+                // Комбинируем с тенью
+                messagesContainer.style.textShadow += `, ${glow}`;
+            } else {
+                messagesContainer.style.textShadow = glow;
+            }
+        }
+        
+        // Применяем обводку текста
+        if (this.settings.textStrokeEnabled) {
+            if (this.settings.textStrokeType === 'inset') {
+                // Внешняя обводка через text-stroke
+                const stroke = `${this.settings.textStrokeWidth}px ${this.settings.textStrokeColor}`;
+                messagesContainer.style.webkitTextStroke = stroke;
+                messagesContainer.style.textStroke = stroke;
+            } else if (this.settings.textStrokeType === 'outline') {
+                // Внутренняя обводка через text-shadow с множественными тенями
+                const strokeWidth = this.settings.textStrokeWidth;
+                const strokeColor = this.settings.textStrokeColor;
+                
+                // Создаем внутреннюю обводку через множественные text-shadow
+                let insetShadows = [];
+                for (let i = 0; i < strokeWidth; i++) {
+                    insetShadows.push(`-${i}px -${i}px 0 ${strokeColor}`);
+                    insetShadows.push(`${i}px -${i}px 0 ${strokeColor}`);
+                    insetShadows.push(`-${i}px ${i}px 0 ${strokeColor}`);
+                    insetShadows.push(`${i}px ${i}px 0 ${strokeColor}`);
+                }
+                
+                // Добавляем к существующей тени или создаем новую
+                if (this.settings.textShadowEnabled) {
+                    const existingShadow = `${this.settings.textShadowX}px ${this.settings.textShadowY}px ${this.settings.textShadowBlur}px ${this.settings.textShadowColor}`;
+                    messagesContainer.style.textShadow = `${existingShadow}, ${insetShadows.join(', ')}`;
+                } else {
+                    messagesContainer.style.textShadow = insetShadows.join(', ');
+                }
+            }
+        }
     }
 }
 
