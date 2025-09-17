@@ -1164,22 +1164,31 @@ body {
     word-break: break-word;
     white-space: pre-wrap;
     opacity: 1;
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0); /* Аппаратное ускорение */
     max-width: 100%;
     box-sizing: border-box;
     overflow-wrap: break-word;
     hyphens: auto;
+    /* Оптимизация для анимаций */
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    -webkit-transform: translate3d(0, 0, 0);
+    /* Плавные переходы */
+    transition: transform 0.2s ease-out, opacity 0.2s ease-out;
 }
 
 /* Класс для сообщений без анимации */
 .preview-message.no-animation {
     opacity: 1 !important;
-    transform: translateX(0) !important;
+    transform: translate3d(0, 0, 0) !important;
     line-height: 1.2;
     background-size: cover, cover;
     background-position: center, center;
     background-repeat: no-repeat, no-repeat;
     position: relative;
+    will-change: auto;
+    transition: none;
 }
 
 /* Элементы сообщений предпросмотра */
@@ -1439,45 +1448,45 @@ body {
     max-width: 80%;
 }
 
-/* Анимации появления сообщений */
+/* Анимации появления сообщений - улучшенные с плавными переходами */
 @keyframes slideIn {
-    from {
+    0% {
         opacity: 0;
-        transform: translateX(-50px);
+        transform: translate3d(-30px, 0, 0);
     }
-    to {
+    100% {
         opacity: 1;
-        transform: translateX(0);
+        transform: translate3d(0, 0, 0);
     }
 }
 
 @keyframes slideInRight {
-    from {
+    0% {
         opacity: 0;
-        transform: translateX(50px);
+        transform: translate3d(30px, 0, 0);
     }
-    to {
+    100% {
         opacity: 1;
-        transform: translateX(0);
+        transform: translate3d(0, 0, 0);
     }
 }
 
 @keyframes slideInUp {
-    from {
+    0% {
         opacity: 0;
-        transform: translateY(50px);
+        transform: translate3d(0, 30px, 0);
     }
-    to {
+    100% {
         opacity: 1;
-        transform: translateY(0);
+        transform: translate3d(0, 0, 0);
     }
 }
 
 @keyframes fadeIn {
-    from {
+    0% {
         opacity: 0;
     }
-    to {
+    100% {
         opacity: 1;
     }
 }
@@ -1485,258 +1494,257 @@ body {
 @keyframes bounceIn {
     0% {
         opacity: 0;
-        transform: scale(0.3);
+        transform: scale3d(0.3, 0.3, 0.3);
     }
-    50% {
-        transform: scale(1.05);
+    20% {
+        transform: scale3d(1.1, 1.1, 1.1);
     }
-    70% {
-        transform: scale(0.9);
+    40% {
+        transform: scale3d(0.9, 0.9, 0.9);
+    }
+    60% {
+        opacity: 1;
+        transform: scale3d(1.03, 1.03, 1.03);
+    }
+    80% {
+        transform: scale3d(0.97, 0.97, 0.97);
     }
     100% {
         opacity: 1;
-        transform: scale(1);
+        transform: scale3d(1, 1, 1);
     }
 }
 
 @keyframes scaleIn {
-    from {
+    0% {
         opacity: 0;
-        transform: scale(0.8);
+        transform: scale3d(0.8, 0.8, 0.8);
     }
-    to {
+    100% {
         opacity: 1;
-        transform: scale(1);
+        transform: scale3d(1, 1, 1);
     }
 }
 
 @keyframes slideDown {
-    from {
-        transform: translateY(-100%);
+    0% {
+        transform: translate3d(0, -20px, 0);
         opacity: 0;
     }
-    to {
-        transform: translateY(0);
+    100% {
+        transform: translate3d(0, 0, 0);
         opacity: 1;
     }
 }
 
 @keyframes rotate {
-    from {
-        transform: rotate(-180deg);
+    0% {
+        transform: rotate3d(0, 0, 1, -90deg);
         opacity: 0;
     }
-    to {
-        transform: rotate(0deg);
+    100% {
+        transform: rotate3d(0, 0, 1, 0deg);
         opacity: 1;
     }
 }
 
 @keyframes flip {
-    from {
-        transform: perspective(400px) rotateY(-90deg);
+    0% {
+        transform: perspective(400px) rotateY(-45deg);
         opacity: 0;
     }
-    to {
+    100% {
         transform: perspective(400px) rotateY(0deg);
         opacity: 1;
     }
 }
 
 @keyframes zoom {
-    from {
-        transform: scale(0.5);
+    0% {
+        transform: scale3d(0.8, 0.8, 0.8);
         opacity: 0;
     }
-    to {
-        transform: scale(1);
+    100% {
+        transform: scale3d(1, 1, 1);
         opacity: 1;
     }
 }
 
 @keyframes elastic {
     0% {
-        transform: scale(0);
+        transform: scale3d(0.3, 0.3, 0.3);
         opacity: 0;
     }
+    25% {
+        transform: scale3d(1.1, 1.1, 1.1);
+        opacity: 0.7;
+    }
     50% {
-        transform: scale(1.2);
-        opacity: 0.8;
+        transform: scale3d(0.9, 0.9, 0.9);
+        opacity: 0.9;
+    }
+    75% {
+        transform: scale3d(1.05, 1.05, 1.05);
+        opacity: 1;
     }
     100% {
-        transform: scale(1);
+        transform: scale3d(1, 1, 1);
         opacity: 1;
     }
 }
 
 @keyframes back {
     0% {
-        transform: translateX(-100px) scale(0.8);
+        transform: translate3d(-20px, 0, 0) scale3d(0.8, 0.8, 0.8);
         opacity: 0;
     }
     50% {
-        transform: translateX(20px) scale(1.1);
+        transform: translate3d(5px, 0, 0) scale3d(1.05, 1.05, 1.05);
         opacity: 0.8;
     }
     100% {
-        transform: translateX(0) scale(1);
+        transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
         opacity: 1;
     }
 }
 
-/* Анимации исчезновения */
+/* Анимации исчезновения - улучшенные */
 @keyframes fadeOut {
-    from {
+    0% {
         opacity: 1;
     }
-    to {
+    100% {
         opacity: 0;
     }
 }
 
 @keyframes slideOutLeft {
-    from {
-        transform: translateX(0);
+    0% {
+        transform: translate3d(0, 0, 0);
         opacity: 1;
     }
-    to {
-        transform: translateX(-100px);
+    100% {
+        transform: translate3d(-30px, 0, 0);
         opacity: 0;
     }
 }
 
 @keyframes slideOutRight {
-    from {
-        transform: translateX(0);
+    0% {
+        transform: translate3d(0, 0, 0);
         opacity: 1;
     }
-    to {
-        transform: translateX(100px);
+    100% {
+        transform: translate3d(30px, 0, 0);
         opacity: 0;
     }
 }
 
 @keyframes slideOutUp {
-    from {
-        transform: translateY(0);
+    0% {
+        transform: translate3d(0, 0, 0);
         opacity: 1;
     }
-    to {
-        transform: translateY(-50px);
+    100% {
+        transform: translate3d(0, -20px, 0);
         opacity: 0;
     }
 }
 
 @keyframes slideOutDown {
-    from {
-        transform: translateY(0);
+    0% {
+        transform: translate3d(0, 0, 0);
         opacity: 1;
     }
-    to {
-        transform: translateY(100%);
+    100% {
+        transform: translate3d(0, 20px, 0);
         opacity: 0;
     }
 }
 
 @keyframes scaleOut {
-    from {
-        transform: scale(1);
+    0% {
+        transform: scale3d(1, 1, 1);
         opacity: 1;
     }
-    to {
-        transform: scale(0.5);
+    100% {
+        transform: scale3d(0.8, 0.8, 0.8);
         opacity: 0;
     }
 }
 
 @keyframes rotateOut {
-    from {
-        transform: rotate(0deg);
+    0% {
+        transform: rotate3d(0, 0, 1, 0deg);
         opacity: 1;
     }
-    to {
-        transform: rotate(180deg);
+    100% {
+        transform: rotate3d(0, 0, 1, 90deg);
         opacity: 0;
     }
 }
 
 @keyframes flipOut {
-    from {
+    0% {
         transform: perspective(400px) rotateY(0deg);
         opacity: 1;
     }
-    to {
-        transform: perspective(400px) rotateY(90deg);
+    100% {
+        transform: perspective(400px) rotateY(45deg);
         opacity: 0;
     }
 }
 
 @keyframes zoomOut {
-    from {
-        transform: scale(1);
+    0% {
+        transform: scale3d(1, 1, 1);
         opacity: 1;
     }
-    to {
-        transform: scale(0.5);
+    100% {
+        transform: scale3d(0.8, 0.8, 0.8);
         opacity: 0;
     }
 }
 
 @keyframes elasticOut {
     0% {
-        transform: scale(1);
+        transform: scale3d(1, 1, 1);
         opacity: 1;
     }
-    50% {
-        transform: scale(1.2);
+    25% {
+        transform: scale3d(1.1, 1.1, 1.1);
         opacity: 0.8;
     }
+    50% {
+        transform: scale3d(0.9, 0.9, 0.9);
+        opacity: 0.6;
+    }
+    75% {
+        transform: scale3d(0.7, 0.7, 0.7);
+        opacity: 0.3;
+    }
     100% {
-        transform: scale(0);
+        transform: scale3d(0.3, 0.3, 0.3);
         opacity: 0;
     }
 }
 
 @keyframes backOut {
     0% {
-        transform: translateX(0) scale(1);
+        transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
         opacity: 1;
     }
     50% {
-        transform: translateX(-20px) scale(1.1);
-        opacity: 0.8;
+        transform: translate3d(-10px, 0, 0) scale3d(1.05, 1.05, 1.05);
+        opacity: 0.7;
     }
     100% {
-        transform: translateX(100px) scale(0.8);
+        transform: translate3d(20px, 0, 0) scale3d(0.8, 0.8, 0.8);
         opacity: 0;
     }
 }
 
-/* Анимации исчезновения для предпросмотра */
-.preview-message.fade-out {
-    opacity: 0;
-    transform: translateX(-20px);
-}
-
-.preview-message.slide-out-left {
-    opacity: 0;
-    transform: translateX(-100px);
-}
-
-.preview-message.slide-out-right {
-    opacity: 0;
-    transform: translateX(100px);
-}
-
-.preview-message.slide-out-up {
-    opacity: 0;
-    transform: translateY(-50px);
-}
-
-.preview-message.scale-out {
-    opacity: 0;
-    transform: scale(0.5);
-}
+/* Анимации исчезновения для предпросмотра применяются только через JavaScript inline стили */
 
 /* Fallback для градиентов в OBS */
 .preview-chat-container {

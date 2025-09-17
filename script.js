@@ -1960,8 +1960,7 @@ class TwitchChat {
             }
             
             if (messageToRemove) {
-                messageToRemove.remove();
-                console.log(`🗑️ Удалено ${removeReason} сообщение для освобождения места (попытка ${attempts + 1})`);
+                this.removeMessageWithAnimation(messageToRemove, `${removeReason} сообщение для освобождения места (попытка ${attempts + 1})`);
                 attempts++;
             } else {
                 break;
@@ -2041,8 +2040,7 @@ class TwitchChat {
             }
             
             if (shouldRemove) {
-                console.log(`🗑️ Удалено сообщение ${index + 1}, которое ${reason}`);
-                message.remove();
+                this.removeMessageWithAnimation(message, `сообщение ${index + 1}, которое ${reason}`);
                 removedCount++;
             }
         });
@@ -2122,20 +2120,64 @@ class TwitchChat {
     
     getInitialTransform(animationType) {
         const transformMap = {
-            'slide': 'translateX(-50px)',
-            'slide-right': 'translateX(50px)',
-            'slide-up': 'translateY(50px)',
-            'slide-down': 'translateY(-100%)',
-            'fade': 'translateX(0)',
-            'bounce': 'scale(0.3)',
-            'scale': 'scale(0.8)',
-            'rotate': 'rotate(-180deg)',
-            'flip': 'perspective(400px) rotateY(-90deg)',
-            'zoom': 'scale(0.5)',
-            'elastic': 'scale(0)',
-            'back': 'translateX(-100px) scale(0.8)'
+            'slide': 'translate3d(-30px, 0, 0)',
+            'slide-right': 'translate3d(30px, 0, 0)',
+            'slide-up': 'translate3d(0, 30px, 0)',
+            'slide-down': 'translate3d(0, -20px, 0)',
+            'fade': 'translate3d(0, 0, 0)',
+            'bounce': 'scale3d(0.3, 0.3, 0.3)',
+            'scale': 'scale3d(0.8, 0.8, 0.8)',
+            'rotate': 'rotate3d(0, 0, 1, -90deg)',
+            'flip': 'perspective(400px) rotateY(-45deg)',
+            'zoom': 'scale3d(0.8, 0.8, 0.8)',
+            'elastic': 'scale3d(0.3, 0.3, 0.3)',
+            'back': 'translate3d(-20px, 0, 0) scale3d(0.8, 0.8, 0.8)'
         };
-        return transformMap[animationType] || 'translateX(-50px)';
+        return transformMap[animationType] || 'translate3d(-30px, 0, 0)';
+    }
+    
+    // Универсальная функция для удаления сообщений с анимацией
+    removeMessageWithAnimation(messageElement, reason = 'неизвестно') {
+        if (!messageElement || !messageElement.parentNode) return;
+        
+        if (this.settings.disappearAnimation !== 'none') {
+            // Применяем анимацию исчезновения
+            const animationName = this.getAnimationName(this.settings.disappearAnimation);
+            
+            console.log(`🎭 Применяем анимацию исчезновения: ${this.settings.disappearAnimation} -> ${animationName}`);
+            
+            // Сбрасываем только анимации, но сохраняем текущий transform
+            messageElement.style.animation = '';
+            messageElement.style.animationName = '';
+            messageElement.style.animationDuration = '';
+            messageElement.style.animationDelay = '';
+            messageElement.style.animationFillMode = '';
+            messageElement.style.animationTimingFunction = '';
+            
+            // Убираем классы анимаций появления
+            messageElement.classList.remove('no-animation');
+            
+            // Устанавливаем will-change для оптимизации
+            messageElement.style.willChange = 'transform, opacity';
+            
+            // Применяем новую анимацию исчезновения с плавным easing
+            messageElement.style.animation = `${animationName} ${this.settings.disappearDuration}ms cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards`;
+            
+            console.log(`🗑️ Удаление сообщения с анимацией: ${reason}`);
+            
+            setTimeout(() => {
+                if (messageElement.parentNode) {
+                    messageElement.style.willChange = 'auto';
+                    messageElement.parentNode.removeChild(messageElement);
+                    this.syncMessageCount();
+                }
+            }, this.settings.disappearDuration);
+        } else {
+            // Если анимация исчезновения отключена, просто удаляем элемент
+            console.log(`🗑️ Удаление сообщения без анимации: ${reason}`);
+            messageElement.parentNode.removeChild(messageElement);
+            this.syncMessageCount();
+        }
     }
     
     // Метод fetchTwitchBadges удален - используем только SVG значки
@@ -2222,21 +2264,22 @@ class TwitchChat {
             messageElement.style.opacity = '0';
             messageElement.style.transform = this.getInitialTransform(this.settings.appearAnimation);
             
-            // Применяем анимацию появления
-            messageElement.style.animation = `${animationName} ${animationDuration} ease-out ${animationDelay} forwards`;
+            // Применяем анимацию появления с плавным easing
+            messageElement.style.animation = `${animationName} ${animationDuration} cubic-bezier(0.25, 0.46, 0.45, 0.94) ${animationDelay} forwards`;
             
             // Fallback: если анимация не сработает, показываем элемент через некоторое время
             setTimeout(() => {
                 if (messageElement.style.opacity === '0' || getComputedStyle(messageElement).opacity === '0') {
                     messageElement.style.opacity = '1';
-                    messageElement.style.transform = 'translateX(0)';
+                    messageElement.style.transform = 'translate3d(0, 0, 0)';
                     messageElement.style.animation = '';
+                    messageElement.style.willChange = 'auto';
                 }
-            }, this.settings.appearDuration + this.settings.appearDelay + 100);
+            }, this.settings.appearDuration + this.settings.appearDelay + 50);
         } else {
             // Если анимация отключена или выбрана "Нет", просто показываем элемент
             messageElement.style.opacity = '1';
-            messageElement.style.transform = 'translateX(0)';
+            messageElement.style.transform = 'translate3d(0, 0, 0)';
         }
         
         // Применяем настройки фона сообщения
@@ -2330,33 +2373,7 @@ class TwitchChat {
         if (this.settings.fadeMessages) {
             const totalDisplayTime = this.settings.messageDisplayTime * 1000;
             setTimeout(() => {
-                if (this.settings.disappearAnimation !== 'none') {
-                    // Применяем анимацию исчезновения с правильной длительностью
-                    const animationName = this.getAnimationName(this.settings.disappearAnimation);
-                    // Сбрасываем все предыдущие анимации и стили
-                    messageElement.style.animation = '';
-                    messageElement.style.animationName = '';
-                    messageElement.style.animationDuration = '';
-                    messageElement.style.animationDelay = '';
-                    messageElement.style.animationFillMode = '';
-                    messageElement.style.animationTimingFunction = '';
-                    // Убираем классы анимаций появления
-                    messageElement.classList.remove('no-animation');
-                    // Применяем новую анимацию исчезновения
-                    messageElement.style.animation = `${animationName} ${this.settings.disappearDuration}ms ease-in forwards`;
-                    setTimeout(() => {
-                        if (messageElement.parentNode) {
-                            messageElement.parentNode.removeChild(messageElement);
-                            this.syncMessageCount(); // Синхронизируем после удаления
-                        }
-                    }, this.settings.disappearDuration);
-                } else {
-                    // Если анимация исчезновения отключена, просто удаляем элемент
-                    if (messageElement.parentNode) {
-                        messageElement.parentNode.removeChild(messageElement);
-                        this.syncMessageCount(); // Синхронизируем после удаления
-                    }
-                }
+                this.removeMessageWithAnimation(messageElement, 'автоматическое удаление по таймеру');
             }, totalDisplayTime);
         }
         
