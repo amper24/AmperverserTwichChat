@@ -9,6 +9,21 @@ class ChatEditor {
         this.ffzGlobalEmotes = [];
         this.ffzChannelEmotes = [];
         
+        // Кэш для бейджей (синхронизируется с основным чатом)
+        this.badgeCache = new Map();
+        this.userBadges = {}; // Пользовательские бейджи (BTTV, Chatterino, FFZ)
+        this.bttvBadges = [];
+        this.chatterinoBadges = [];
+        this.ffzBadges = {};
+        
+        // Пользовательские настройки для различных сервисов
+        this.bttvUserSettings = {};
+        this.ffzUserSettings = {};
+        this.sevenTVUserSettings = {};
+        
+        // Эмодзи
+        this.emotes = {};
+        
         this.settings = {
             channel: '',
             baseURL: 'https://amper24.github.io/AmperverserTwichChat/',
@@ -103,6 +118,11 @@ class ChatEditor {
                 this.limitPreviewMessages();
             }, 100);
         });
+        
+        // Периодическая синхронизация кэша бейджей
+        setInterval(() => {
+            this.syncBadgeCache();
+        }, 5000); // Синхронизируем каждые 5 секунд
     }
     
     
@@ -1574,6 +1594,9 @@ class ChatEditor {
     }
     
     updatePreview() {
+        // Синхронизируем кэш бейджей перед обновлением предпросмотра
+        this.syncBadgeCache();
+        
         // Применяем полные размеры чата к предпросмотру
         this.elements.chatPreview.style.width = this.settings.chatWidth + 'px';
         this.elements.chatPreview.style.height = this.settings.chatHeight + 'px';
@@ -2405,6 +2428,45 @@ class ChatEditor {
         return knownBadgeUrls[badgeType] || null;
     }
     
+    // Проверка на zero-width эмодзи BTTV
+    isBTTVZeroWidthEmote(emoteId) {
+        const zeroWidthEmotes = [
+            "5e76d338d6581c3724c0f0b2", // SoSnowy
+            "5e76d399d6581c3724c0f0b8", // IceCold
+            "567b5b520e984428652809b6", // SoBayed
+            "5849c9a4f52be01a7ee5f79d", // BegWan
+            "567b5c080e984428652809ba", // SoBad
+            "567b5dc00e984428652809bd", // SoGood
+            "58487cc6f52be01a7ee5f205", // SoCute
+            "5849c9c8f52be01a7ee5f79e"  // SoHappy
+        ];
+        return zeroWidthEmotes.includes(emoteId);
+    }
+    
+    // Получение URL эмодзи 7TV
+    get7TVEmoteUrl(emoteId) {
+        // Приоритет: 4x.webp > 2x.webp > 1x.webp > 4x.png
+        return `https://cdn.7tv.app/emote/${emoteId}/4x.webp`;
+    }
+    
+    // Проверка на zero-width эмодзи 7TV
+    is7TVZeroWidthEmote(flags) {
+        // 7TV использует флаги: 1 = ZERO_WIDTH, 2 = PRIVATE, 4 = ACTIVITY
+        return flags && Array.isArray(flags) && flags.includes(1);
+    }
+    
+    // Получение URL эмодзи FFZ v2
+    getFFZEmoteUrlV2(urls) {
+        // API v2 использует другую структуру URLs
+        if (urls && typeof urls === 'object') {
+            // Приоритет: 4x > 2x > 1x
+            if (urls['4']) return urls['4'];
+            if (urls['2']) return urls['2'];
+            if (urls['1']) return urls['1'];
+        }
+        return null;
+    }
+    
     getFallbackBadge(badgeType) {
         // Создаем SVG значки программно (только нужные)
         const svgBadges = {
@@ -2463,47 +2525,524 @@ class ChatEditor {
     }
     
     createUserBadges(userData, username = '') {
-        // Если основной чат доступен, используем его систему бейджей
-        if (window.twitchChat && this.previewConnected) {
-            return window.twitchChat.createUserBadges(userData, username);
-        }
-        
-        // Fallback для случая, когда основной чат недоступен
-        let badges = '';
-        
         // Проверяем, нужно ли показывать значки пользователей
         if (!this.settings.showUserBadges) {
-            return badges;
+            return '';
         }
         
-        // Получаем бейджи из userData (если они уже загружены)
-        if (userData.badges && userData.badges.length > 0) {
-            for (const badge of userData.badges) {
+        const badgeElements = [];
+        
+        // Обработка Twitch бейджей из IRC тегов (новая система)
+        if (typeof(userData.badges) === 'string') {
+            console.log('🏷️ Preview processing user badges:', userData.badges);
+            
+            userData.badges.split(',').forEach(badge => {
                 const [badgeType, badgeVersion] = badge.split('/');
+                console.log('🏷️ Preview processing badge:', badgeType, badgeVersion);
                 
-                // Используем настоящие значки Twitch
-                const badgeEmoji = this.getFallbackBadge(badgeType);
-                if (badgeEmoji) {
-                    badges += badgeEmoji;
+                // Используем новую систему бейджей из основного чата
+                const badgeData = this.getBadgeData(badgeType, badgeVersion);
+                if (badgeData) {
+                    const badgeUrl = badgeData.image_url_4x || badgeData.image_url_2x || badgeData.image_url_1x;
+                    const title = badgeData.title || badgeType;
+                    const description = badgeData.description || '';
+                    badgeElements.push(`<img class="badge" src="${badgeUrl}" alt="${title}" title="${description}" />`);
+                    console.log('✅ Preview badge found in cache:', badgeType, badgeVersion);
+                } else {
+                    // Fallback на базовые ролевые значки
+                    const fallbackBadge = this.getFallbackBadge(badgeType);
+                    if (fallbackBadge) {
+                        badgeElements.push(fallbackBadge);
+                        console.log('🔄 Preview using fallback badge for role:', badgeType);
+                    }
+                }
+            });
+        }
+        
+        // Добавляем пользовательские бейджи (BTTV, Chatterino, FFZ)
+        if (this.userBadges && this.userBadges[username]) {
+            this.userBadges[username].forEach(badge => {
+                let badgeHtml = `<img class="badge" src="${badge.url}" alt="${badge.description}" title="${badge.description}"`;
+                if (badge.color) {
+                    badgeHtml += ` style="background-color: ${badge.color};"`;
+                }
+                badgeHtml += ' />';
+                badgeElements.push(badgeHtml);
+            });
+        }
+        
+        return badgeElements.join('');
+    }
+    
+    // Получение данных бейджа из локального кэша
+    getBadgeData(badgeType, badgeVersion) {
+        // Сначала пробуем получить из локального кэша
+        if (this.badgeCache && this.badgeCache.size > 0) {
+            for (let [channelId, cache] of this.badgeCache) {
+                if (cache.channel && cache.channel[badgeType] && cache.channel[badgeType].versions[badgeVersion]) {
+                    return cache.channel[badgeType].versions[badgeVersion];
+                }
+                if (cache.global && cache.global[badgeType] && cache.global[badgeType].versions[badgeVersion]) {
+                    return cache.global[badgeType].versions[badgeVersion];
                 }
             }
-        } else {
-            // Fallback на настоящие значки Twitch если бейджи не загружены (только нужные)
-            if (userData.isBroadcaster) {
-                badges += this.getFallbackBadge('broadcaster');
-            }
-            if (userData.isMod) {
-                badges += this.getFallbackBadge('moderator');
-            }
-            if (userData.isVip) {
-                badges += this.getFallbackBadge('vip');
-            }
-            if (userData.isSubscriber) {
-                badges += this.getFallbackBadge('subscriber');
-            }
         }
         
-        return badges;
+        // Если основной чат доступен, используем его кэш бейджей как fallback
+        if (window.twitchChat && window.twitchChat.getBadgeData) {
+            return window.twitchChat.getBadgeData(badgeType, badgeVersion);
+        }
+        
+        // Fallback - возвращаем null, чтобы использовался fallback badge
+        return null;
+    }
+    
+    // Загрузка бейджей Twitch через Helix API
+    async loadBadges(channelId) {
+        try {
+            const twitchClientId = 'kimne78kx3ncx6brgo4mv6wki5h1ko';
+            
+            const headers = {
+                'Client-ID': twitchClientId,
+            };
+
+            const [globalBadgesRes, channelBadgesRes] = await Promise.all([
+                fetch('https://api.twitch.tv/helix/chat/badges/global', { headers }).then(res => {
+                    if (!res.ok) throw new Error(`Failed to fetch global badges: ${res.statusText}`);
+                    return res.json();
+                }),
+                fetch(`https://api.twitch.tv/helix/chat/badges?broadcaster_id=${channelId}`, { headers }).then(res => {
+                    if (!res.ok) throw new Error(`Failed to fetch channel badges: ${res.statusText}`);
+                    return res.json();
+                })
+            ]);
+
+            const formatBadges = (response) => {
+                if (!response || !response.data) return {};
+                const badgeSets = {};
+                for (const set of response.data) {
+                    const versions = {};
+                    for (const version of set.versions) {
+                        versions[version.id] = version;
+                    }
+                    badgeSets[set.set_id] = { versions };
+                }
+                return badgeSets;
+            };
+
+            const globalBadges = formatBadges(globalBadgesRes);
+            const channelBadges = formatBadges(channelBadgesRes);
+
+            this.badgeCache.set(channelId, {
+                global: globalBadges,
+                channel: channelBadges
+            });
+
+            console.log('🏷️ Значки успешно загружены с Helix API для канала:', channelId);
+
+        } catch (error) {
+            console.warn('⚠️ Ошибка загрузки значков Twitch из Helix API, используется резервный набор:', error.message);
+            const fallbackBadges = {
+                "admin": { "versions": { "1": { "image_url_4x": "https://static-cdn.jtvnw.net/badges/v1/d12a2e27-16f6-41d0-ab77-b780518f00a3/3" }}},
+                "broadcaster": { "versions": { "1": { "image_url_4x": "https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/3" }}},
+                "moderator": { "versions": { "1": { "image_url_4x": "https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/3" }}},
+                "partner": { "versions": { "1": { "image_url_4x": "https://static-cdn.jtvnw.net/badges/v1/d12a2e27-16f6-41d0-ab77-b780518f00a3/3" }}},
+                "vip": { "versions": { "1": { "image_url_4x": "https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/3" }}},
+                "premium": { "versions": { "1": { "image_url_4x": "https://static-cdn.jtvnw.net/badges/v1/bbbe0db0-a598-423e-86d0-f9fd98d5f39d/3" }}},
+                "turbo": { "versions": { "1": { "image_url_4x": "https://static-cdn.jtvnw.net/badges/v1/bd444ec6-8f34-4bf9-91f4-af1e3428d80f/3" }}},
+                "twitch-recap-2024": { "versions": { "1": { "image_url_4x": "https://static-cdn.jtvnw.net/badges/v1/702b8146-e623-4560-a43b-a50a0b65f743/3" } } }
+            };
+            this.badgeCache.set(channelId, { global: fallbackBadges, channel: {} });
+            console.log('🔄 Используется резервный набор значков для канала:', channelId);
+        }
+    }
+    
+    // Синхронизация кэша бейджей с основным чатом
+    syncBadgeCache() {
+        if (window.twitchChat) {
+            // Синхронизируем кэш бейджей
+            if (window.twitchChat.badgeCache) {
+                this.badgeCache = window.twitchChat.badgeCache;
+                console.log('🔄 Кэш бейджей синхронизирован с основным чатом');
+            }
+            
+            // Синхронизируем пользовательские бейджи
+            if (window.twitchChat.userBadges) {
+                this.userBadges = window.twitchChat.userBadges;
+            }
+            
+            // Синхронизируем BTTV бейджи
+            if (window.twitchChat.bttvBadges) {
+                this.bttvBadges = window.twitchChat.bttvBadges;
+            }
+            
+            // Синхронизируем Chatterino бейджи
+            if (window.twitchChat.chatterinoBadges) {
+                this.chatterinoBadges = window.twitchChat.chatterinoBadges;
+            }
+            
+            // Синхронизируем FFZ бейджи
+            if (window.twitchChat.ffzBadges) {
+                this.ffzBadges = window.twitchChat.ffzBadges;
+            }
+        }
+    }
+    
+    // Инициализация бейджей для предпросмотра
+    async initializeBadges() {
+        console.log('🏷️ Инициализация бейджей для предпросмотра...');
+        
+        // Загружаем глобальные бейджи Twitch
+        try {
+            const twitchClientId = 'kimne78kx3ncx6brgo4mv6wki5h1ko';
+            const headers = { 'Client-ID': twitchClientId };
+            
+            const response = await fetch('https://api.twitch.tv/helix/chat/badges/global', { headers });
+            if (response.ok) {
+                const data = await response.json();
+                const globalBadges = {};
+                
+                if (data.data) {
+                    data.data.forEach(set => {
+                        const versions = {};
+                        set.versions.forEach(version => {
+                            versions[version.id] = version;
+                        });
+                        globalBadges[set.set_id] = { versions };
+                    });
+                }
+                
+                // Сохраняем глобальные бейджи в кэш
+                this.badgeCache.set('global', { global: globalBadges, channel: {} });
+                console.log('✅ Глобальные бейджи Twitch загружены для предпросмотра');
+            }
+        } catch (error) {
+            console.warn('⚠️ Ошибка загрузки глобальных бейджей для предпросмотра:', error.message);
+        }
+        
+        // Загружаем пользовательские бейджи (BTTV, Chatterino, FFZ)
+        this.loadAdditionalBadges();
+    }
+    
+    // Загрузка дополнительных бейджей
+    loadAdditionalBadges() {
+        console.log('🏷️ Загружаем дополнительные бейджи для предпросмотра...');
+        
+        // BTTV бейджи
+        fetch('https://api.betterttv.net/3/cached/badges')
+            .then(res => res.json())
+            .then(data => {
+                if (data && Array.isArray(data)) {
+                    this.bttvBadges = data;
+                    console.log('✅ BTTV бейджи загружены для предпросмотра:', data.length);
+                }
+            })
+            .catch(err => console.warn('⚠️ Ошибка загрузки BTTV бейджей:', err.message));
+        
+        // Chatterino бейджи
+        fetch('https://api.chatterino.com/badges')
+            .then(res => res.json())
+            .then(data => {
+                if (data && Array.isArray(data)) {
+                    this.chatterinoBadges = data;
+                    console.log('✅ Chatterino бейджи загружены для предпросмотра:', data.length);
+                }
+            })
+            .catch(err => console.warn('⚠️ Ошибка загрузки Chatterino бейджей:', err.message));
+        
+        // FFZ бейджи
+        fetch('https://api.frankerfacez.com/v1/badges/ids')
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.badges) {
+                    this.ffzBadges = data.badges;
+                    console.log('✅ FFZ бейджи загружены для предпросмотра:', Object.keys(data.badges).length);
+                }
+            })
+            .catch(err => console.warn('⚠️ Ошибка загрузки FFZ бейджей:', err.message));
+    }
+    
+    // Загружаем пользовательские бейджи (BTTV, Chatterino, FFZ)
+    loadUserBadges(nick, userId) {
+        if (!this.userBadges) this.userBadges = {};
+        this.userBadges[nick] = [];
+        
+        // BTTV бейджи - используем актуальный API
+        if (this.bttvBadges && this.bttvBadges.length > 0) {
+            this.bttvBadges.forEach(user => {
+                if (user.name === nick) {
+                    const userBadge = {
+                        description: user.badge.description,
+                        url: user.badge.svg,
+                        source: 'bttv',
+                        type: 'user'
+                    };
+                    if (!this.userBadges[nick].includes(userBadge)) {
+                        this.userBadges[nick].push(userBadge);
+                        console.log('🎭 BTTV бейдж загружен для пользователя:', nick, userBadge.description);
+                    }
+                }
+            });
+        }
+        
+        // Загружаем дополнительные BTTV данные пользователя
+        this.loadBTTVUserData(nick, userId);
+        
+        // Загружаем дополнительные FFZ данные пользователя
+        this.loadFFZUserData(nick, userId);
+        
+        // Загружаем дополнительные 7TV данные пользователя
+        this.load7TVUserData(nick, userId);
+        
+        // Chatterino бейджи
+        if (this.chatterinoBadges) {
+            this.chatterinoBadges.forEach(badge => {
+                badge.users.forEach(user => {
+                    if (user === userId) {
+                        const userBadge = {
+                            description: badge.tooltip,
+                            url: badge.image3 || badge.image2 || badge.image1,
+                            source: 'chatterino',
+                            type: 'user'
+                        };
+                        if (!this.userBadges[nick].includes(userBadge)) {
+                            this.userBadges[nick].push(userBadge);
+                            console.log('💬 Chatterino бейдж загружен для пользователя:', nick, userBadge.description);
+                        }
+                    }
+                });
+            });
+        }
+        
+        // FFZ бейджи - используем актуальный API
+        if (this.ffzBadges && Object.keys(this.ffzBadges).length > 0) {
+            Object.entries(this.ffzBadges).forEach(([badgeId, badge]) => {
+                if (badge.users && badge.users.includes(userId)) {
+                    const userBadge = {
+                        description: badge.description || `FFZ Badge ${badgeId}`,
+                        url: badge.image,
+                        source: 'ffz',
+                        type: 'user',
+                        id: badgeId
+                    };
+                    if (!this.userBadges[nick].includes(userBadge)) {
+                        this.userBadges[nick].push(userBadge);
+                        console.log('🎨 FFZ бейдж загружен для пользователя:', nick, userBadge.description);
+                    }
+                }
+            });
+        }
+    }
+    
+    // Загружаем BTTV данные пользователя
+    loadBTTVUserData(nick, userId) {
+        if (!userId || !nick) return;
+        
+        // Загружаем настройки пользователя BTTV через правильный эндпоинт
+        fetch(`https://api.betterttv.net/3/cached/users/twitch/${userId}`)
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(userData => {
+                if (userData && userData.id) {
+                    console.log('🎭 BTTV данные пользователя загружены:', nick, userData);
+                    
+                    // Сохраняем настройки пользователя
+                    if (!this.bttvUserSettings) this.bttvUserSettings = {};
+                    this.bttvUserSettings[nick] = {
+                        id: userData.id,
+                        name: userData.name,
+                        displayName: userData.displayName,
+                        providerId: userData.providerId,
+                        badges: userData.badges || [],
+                        bio: userData.bio || '',
+                        createdAt: userData.createdAt,
+                        updatedAt: userData.updatedAt
+                    };
+                    
+                    // Загружаем персональные эмодзи пользователя
+                    if (userData.emotes && Array.isArray(userData.emotes)) {
+                        userData.emotes.forEach(emote => {
+                            this.emotes[emote.code] = {
+                                id: emote.id,
+                                image: `https://cdn.betterttv.net/emote/${emote.id}/3x`,
+                                source: 'bttv',
+                                type: 'user',
+                                animated: emote.animated || false,
+                                zeroWidth: this.isBTTVZeroWidthEmote(emote.id)
+                            };
+                        });
+                        console.log('🎭 Персональные BTTV эмодзи пользователя загружены:', nick, userData.emotes.length);
+                    }
+                }
+            })
+            .catch(err => {
+                // Игнорируем ошибки для пользователей без BTTV аккаунта
+                console.log('ℹ️ BTTV данные пользователя недоступны:', nick, err.message);
+            });
+    }
+    
+    // Загружаем FFZ данные пользователя
+    loadFFZUserData(nick, userId) {
+        if (!userId || !nick) return;
+        
+        // Загружаем настройки пользователя FFZ через API v2
+        fetch(`https://api.frankerfacez.com/v2/user/${userId}`)
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(userData => {
+                if (userData && userData.user) {
+                    console.log('🎨 FFZ данные пользователя загружены (API v2):', nick, userData.user);
+                    
+                    // Сохраняем настройки пользователя
+                    if (!this.ffzUserSettings) this.ffzUserSettings = {};
+                    this.ffzUserSettings[nick] = {
+                        id: userData.user.id,
+                        name: userData.user.name,
+                        displayName: userData.user.display_name,
+                        bio: userData.user.bio || '',
+                        badges: userData.user.badges || [],
+                        createdAt: userData.user.created_at,
+                        updatedAt: userData.user.updated_at,
+                        avatar: userData.user.avatar || null,
+                        style: userData.user.style || {}
+                    };
+                    
+                    // Загружаем персональные эмодзи пользователя
+                    if (userData.sets && Object.keys(userData.sets).length > 0) {
+                        Object.values(userData.sets).forEach(set => {
+                            if (set.emoticons && Array.isArray(set.emoticons)) {
+                                set.emoticons.forEach(emote => {
+                                    this.emotes[emote.name] = {
+                                        id: emote.id,
+                                        name: emote.name,
+                                        image: this.getFFZEmoteUrlV2(emote.urls),
+                                        source: 'ffz',
+                                        type: 'user',
+                                        animated: emote.animated || false,
+                                        modifier: emote.modifier || false,
+                                        modifier_flags: emote.modifier_flags || 0,
+                                        zeroWidth: false,
+                                        usage_count: emote.usage_count || 0,
+                                        created_at: emote.created_at,
+                                        updated_at: emote.updated_at,
+                                        owner: emote.owner ? {
+                                            id: emote.owner.id,
+                                            name: emote.owner.name,
+                                            display_name: emote.owner.display_name
+                                        } : null
+                                    };
+                                });
+                                console.log('🎨 Персональные FFZ эмодзи пользователя загружены (API v2):', nick, set.emoticons.length);
+                            }
+                        });
+                    }
+                }
+            })
+            .catch(err => {
+                console.log('ℹ️ FFZ данные пользователя недоступны (API v2):', nick, err.message);
+                // Fallback к v1 API
+                this.loadFFZUserDataV1Fallback(nick, userId);
+            });
+    }
+    
+    // Fallback к FFZ API v1 для данных пользователя
+    loadFFZUserDataV1Fallback(nick, userId) {
+        console.log('🔄 Используем FFZ API v1 fallback для данных пользователя:', nick);
+        fetch(`https://api.frankerfacez.com/v1/user/${userId}`)
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(userData => {
+                if (userData && userData.user) {
+                    console.log('🎨 FFZ данные пользователя загружены (API v1):', nick, userData.user);
+                    
+                    // Сохраняем настройки пользователя
+                    if (!this.ffzUserSettings) this.ffzUserSettings = {};
+                    this.ffzUserSettings[nick] = {
+                        id: userData.user.id,
+                        name: userData.user.name,
+                        displayName: userData.user.display_name,
+                        bio: userData.user.bio || '',
+                        badges: userData.user.badges || [],
+                        createdAt: userData.user.created_at,
+                        updatedAt: userData.user.updated_at,
+                        avatar: userData.user.avatar || null,
+                        style: userData.user.style || {}
+                    };
+                }
+            })
+            .catch(err => {
+                console.log('ℹ️ FFZ данные пользователя недоступны (API v1):', nick, err.message);
+            });
+    }
+    
+    // Загружаем 7TV данные пользователя
+    load7TVUserData(nick, userId) {
+        if (!userId || !nick) return;
+        
+        // Загружаем настройки пользователя 7TV
+        fetch(`https://7tv.io/v3/users/twitch/${userId}`)
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(userData => {
+                if (userData && userData.id) {
+                    console.log('🎬 7TV данные пользователя загружены:', nick, userData);
+                    
+                    // Сохраняем настройки пользователя
+                    if (!this.sevenTVUserSettings) this.sevenTVUserSettings = {};
+                    this.sevenTVUserSettings[nick] = {
+                        id: userData.id,
+                        username: userData.username,
+                        displayName: userData.display_name,
+                        avatarUrl: userData.avatar_url,
+                        style: userData.style || {},
+                        connections: userData.connections || [],
+                        createdAt: userData.created_at,
+                        updatedAt: userData.updated_at
+                    };
+                    
+                    // Загружаем персональные эмодзи пользователя
+                    if (userData.emote_set && userData.emote_set.emotes && Array.isArray(userData.emote_set.emotes)) {
+                        userData.emote_set.emotes.forEach(emote => {
+                            this.emotes[emote.name] = {
+                                id: emote.id,
+                                name: emote.name,
+                                image: this.get7TVEmoteUrl(emote.id),
+                                source: '7tv',
+                                type: 'user',
+                                animated: emote.animated || false,
+                                flags: emote.flags || [],
+                                zeroWidth: this.is7TVZeroWidthEmote(emote.flags),
+                                owner: emote.owner ? {
+                                    id: emote.owner.id,
+                                    username: emote.owner.username,
+                                    displayName: emote.owner.display_name
+                                } : null
+                            };
+                        });
+                        console.log('🎬 Персональные 7TV эмодзи пользователя загружены:', nick, userData.emote_set.emotes.length);
+                    }
+                }
+            })
+            .catch(err => {
+                // Игнорируем ошибки для пользователей без 7TV аккаунта
+                console.log('ℹ️ 7TV данные пользователя недоступны:', nick, err.message);
+            });
     }
     
     getFallbackBadge(badgeType) {
@@ -2674,7 +3213,8 @@ class ChatEditor {
         params.set('showChannelBadges', this.settings.showChannelBadges);
         
         // Настройки шрифтов
-        params.set('fontFamily', this.settings.fontFamily);
+        console.log('🔤 FontFamily being encoded:', this.settings.fontFamily);
+        params.set('fontFamily', encodeURIComponent(this.settings.fontFamily));
         params.set('fontSize', this.settings.fontSize);
         params.set('fontWeight', this.settings.fontWeight);
         params.set('lineHeight', this.settings.lineHeight);
@@ -2778,6 +3318,12 @@ class ChatEditor {
         
         // Принудительно очищаем localStorage от тестовых данных
         this.forceCleanLocalStorage();
+        
+        // Синхронизируем кэш бейджей с основным чатом
+        this.syncBadgeCache();
+        
+        // Инициализируем бейджи для предпросмотра
+        this.initializeBadges();
     }
     
     applySettingsToUI() {
@@ -3189,6 +3735,18 @@ class ChatEditor {
         // Извлекаем название шрифта из CSS значения
         const fontName = fontFamily.replace(/['"]/g, '').split(',')[0].trim();
         
+        // Проверяем, является ли это Minecraft шрифт (используем системные шрифты)
+        const minecraftFonts = [
+            'Minecraft', 'Minecraft TEN', 'Minecraft RUS', 'Minecraft Bold',
+            'Minecraft Italic', 'Minecraft Bold Italic', 'Minecraft Regular',
+            'Minecraft Even', 'Minecraft Odd', 'Minecraft Unicode'
+        ];
+        
+        if (minecraftFonts.includes(fontName)) {
+            console.log('🎮 Используем системный шрифт для Minecraft:', fontName);
+            return; // Не загружаем из Google Fonts, используем системные
+        }
+        
         // Проверяем, является ли это Google Font
         const googleFonts = [
             'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Source Sans Pro', 'Poppins',
@@ -3206,10 +3764,6 @@ class ChatEditor {
             'Audiowide', 'Electrolize', 'Michroma', 'Russo One', 'Press Start 2P',
             'VT323', 'Share Tech Mono', 'Nova Mono', 'Rationale', 'Aldrich',
             'Rajdhani', 'Syncopate',
-            // Minecraft шрифты
-            'Minecraft', 'Minecraft TEN', 'Minecraft RUS', 'Minecraft Bold',
-            'Minecraft Italic', 'Minecraft Bold Italic', 'Minecraft Regular',
-            'Minecraft Even', 'Minecraft Odd', 'Minecraft Unicode',
             // Дополнительные игровые шрифты
             'Orbitron', 'Exo', 'Exo 2', 'Titillium Web', 'Raleway Dots',
             'Monoton', 'Bungee', 'Bungee Shade', 'Bungee Inline', 'Bungee Hairline',
@@ -3504,6 +4058,9 @@ class ChatEditor {
             
             // Подключаемся к чату
             await this.previewChatInstance.connectToChat(this.settings.channel);
+            
+            // Синхронизируем кэш бейджей после подключения
+            this.syncBadgeCache();
             
             // Переопределяем метод добавления сообщений для предпросмотра
             const originalAddMessage = this.previewChatInstance.addChatMessage.bind(this.previewChatInstance);
@@ -3871,58 +4428,6 @@ class ChatEditor {
         return colors[Math.abs(hash) % colors.length];
     }
 
-    createUserBadges(userData, username) {
-        let badges = '';
-        
-        // Проверяем, нужно ли показывать значки пользователей
-        if (!this.settings.showUserBadges) {
-            return badges;
-        }
-        
-        const badgeElements = [];
-        
-        // Обработка Twitch бейджей из IRC тегов (новая система)
-        if (typeof(userData.badges) === 'string') {
-            console.log('🏷️ Preview processing user badges:', userData.badges);
-            
-            userData.badges.split(',').forEach(badge => {
-                const [badgeType, badgeVersion] = badge.split('/');
-                console.log('🏷️ Preview processing badge:', badgeType, badgeVersion);
-                
-                // Используем новую систему бейджей
-                const badgeKey = `${badgeType}/${badgeVersion}`;
-                if (this.badges && this.badges[badgeKey]) {
-                    const badgeData = this.badges[badgeKey];
-                    badgeElements.push(`<img class="badge" src="${badgeData.image}" alt="${badgeData.title}" title="${badgeData.description}" />`);
-                    console.log('✅ Preview badge found in cache:', badgeKey);
-                } else {
-                    // Fallback на базовые ролевые значки для канала
-                    const fallbackBadge = this.getFallbackBadge(badgeType);
-                    if (fallbackBadge) {
-                        badgeElements.push(fallbackBadge);
-                        console.log('🔄 Preview using fallback badge for role:', badgeType);
-                    } else {
-                        // Fallback на старую систему
-                        this.loadBadgeDirectly(badgeType, badgeVersion, badgeElements);
-                    }
-                }
-            });
-        }
-        
-        // Добавляем пользовательские бейджи (BTTV, Chatterino)
-        if (this.userBadges && this.userBadges[username]) {
-            this.userBadges[username].forEach(badge => {
-                let badgeHtml = `<img class="badge" src="${badge.url}" alt="${badge.description}" title="${badge.description}"`;
-                if (badge.color) {
-                    badgeHtml += ` style="background-color: ${badge.color};"`;
-                }
-                badgeHtml += ' />';
-                badgeElements.push(badgeHtml);
-            });
-        }
-        
-        return badgeElements.join('');
-    }
 
     getFallbackBadge(badgeType) {
         // Используем настоящие значки Twitch (только нужные)

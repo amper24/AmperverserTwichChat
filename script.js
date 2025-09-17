@@ -128,9 +128,12 @@ class TwitchChat {
             console.log('chatMessagesElement не найден, будет установлен позже');
         }
         
-        this.loadSettings().then(() => {
+        this.loadSettings().then(async () => {
             this.loadChannelFromURL();
             this.showImageLoadStatus();
+            await this.initializeGoogleFonts();
+            // Уведомляем, что настройки загружены
+            this.settingsLoaded = true;
         });
         console.log('Chat settings after load:', {
             appearAnimation: this.settings.appearAnimation,
@@ -373,7 +376,18 @@ class TwitchChat {
         }
         
         // Настройки шрифтов
-        if (urlParams.get('fontFamily')) this.settings.fontFamily = decodeURIComponent(urlParams.get('fontFamily'));
+        if (urlParams.get('fontFamily')) {
+            // Декодируем URL параметр
+            this.settings.fontFamily = decodeURIComponent(urlParams.get('fontFamily'));
+            console.log('🔤 FontFamily loaded from URL:', this.settings.fontFamily);
+            // Загружаем шрифт асинхронно и ждем завершения
+            try {
+                await this.loadFont(this.settings.fontFamily);
+                console.log('✅ Шрифт из URL загружен и готов к использованию');
+            } catch (error) {
+                console.warn('⚠️ Ошибка загрузки шрифта из URL:', error.message);
+            }
+        }
         if (urlParams.get('fontSize')) this.settings.fontSize = parseInt(urlParams.get('fontSize'));
         if (urlParams.get('fontWeight')) this.settings.fontWeight = parseInt(urlParams.get('fontWeight'));
         if (urlParams.get('lineHeight')) this.settings.lineHeight = parseFloat(urlParams.get('lineHeight'));
@@ -421,7 +435,7 @@ class TwitchChat {
         this.applySettings();
     }
     
-    applySettings() {
+    async applySettings() {
         // Проверяем, что элементы инициализированы
         if (!this.chatContainer || !this.chatMessagesElement) {
             console.log('Элементы чата не инициализированы, пропускаем applySettings');
@@ -624,7 +638,7 @@ class TwitchChat {
         
         
         // Обновляем все существующие сообщения
-        this.updateExistingMessages();
+        await this.updateExistingMessages();
         
         // Проверяем, не переполняется ли чат после изменения настроек
         setTimeout(() => {
@@ -641,7 +655,30 @@ class TwitchChat {
             letterSpacing: this.settings.letterSpacing,
             fontColor: this.settings.fontColor
         });
-        this.chatMessagesElement.style.fontFamily = this.settings.fontFamily;
+        
+        // Применяем шрифт с новой системой
+        await this.applyFontToElement(this.chatMessagesElement, this.settings.fontFamily);
+        
+        // Применяем шрифт также к вложенным элементам
+        const usernameElements = this.chatMessagesElement.querySelectorAll('.username');
+        const textElements = this.chatMessagesElement.querySelectorAll('.text');
+        
+        usernameElements.forEach(element => {
+            element.style.fontFamily = this.settings.fontFamily;
+            element.style.fontSize = this.settings.fontSize + 'px';
+            element.style.fontWeight = this.settings.fontWeight;
+            element.style.lineHeight = this.settings.lineHeight;
+            element.style.letterSpacing = this.settings.letterSpacing + 'px';
+        });
+        
+        textElements.forEach(element => {
+            element.style.fontFamily = this.settings.fontFamily;
+            element.style.fontSize = this.settings.fontSize + 'px';
+            element.style.fontWeight = this.settings.fontWeight;
+            element.style.lineHeight = this.settings.lineHeight;
+            element.style.letterSpacing = this.settings.letterSpacing + 'px';
+        });
+        
         this.chatMessagesElement.style.fontSize = this.settings.fontSize + 'px';
         this.chatMessagesElement.style.fontWeight = this.settings.fontWeight;
         this.chatMessagesElement.style.lineHeight = this.settings.lineHeight;
@@ -679,6 +716,25 @@ class TwitchChat {
             this.chatMessagesElement.style.transform = `translateY(${this.settings.messageVerticalOffset}px)`;
             console.log(`Применено смещение по вертикали к контейнеру: ${this.settings.messageVerticalOffset}px`);
         }
+    }
+    
+    // Метод для инициализации Google Fonts при загрузке
+    async initializeGoogleFonts() {
+        console.log('🔤 Инициализируем популярные Google Fonts...');
+        const popularFonts = [
+            'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins',
+            'Orbitron', 'Press Start 2P', 'VT323', 'Share Tech Mono', 'Electrolize'
+        ];
+        
+        // Загружаем популярные шрифты асинхронно
+        const loadPromises = popularFonts.map(font => 
+            this.loadFont(`'${font}', sans-serif`).catch(error => 
+                console.warn(`⚠️ Не удалось загрузить шрифт ${font}:`, error.message)
+            )
+        );
+        
+        await Promise.allSettled(loadPromises);
+        console.log('✅ Популярные Google Fonts инициализированы');
     }
     
     setupMessageListener() {
@@ -862,13 +918,14 @@ class TwitchChat {
                 });
             };
             
-            this.socket.onmessage = (event) => {
+            this.socket.onmessage = async (event) => {
                 console.log('IRC message received:', event.data);
-                event.data.split('\r\n').forEach(line => {
-                    if (!line) return;
+                const lines = event.data.split('\r\n');
+                for (const line of lines) {
+                    if (!line) continue;
                     console.log('Processing IRC line:', line);
-                    this.parseChatMessage(line);
-                });
+                    await this.parseChatMessage(line);
+                }
             };
             
             this.socket.onclose = () => {
@@ -1596,12 +1653,12 @@ class TwitchChat {
     }
     
     
-    handleMessage(data) {
+    async handleMessage(data) {
         const lines = data.split('\r\n');
         
         for (const line of lines) {
             if (line.includes('PRIVMSG')) {
-                this.parseChatMessage(line);
+                await this.parseChatMessage(line);
             } else if (line.includes('001')) {
                 // Успешное подключение
                 this.isConnected = true;
@@ -1629,7 +1686,7 @@ class TwitchChat {
         }
     }
     
-    parseChatMessage(line) {
+    async parseChatMessage(line) {
         // Используем продвинутый парсер IRC из jChat v2
         const message = this.parseIRC(line);
         console.log('Parsed IRC message:', message);
@@ -1715,7 +1772,7 @@ class TwitchChat {
 
                 // Добавляем информацию о канале в userData
                 const userDataWithChannel = { ...message.tags, sourceChannel: messageChannel };
-                this.addChatMessage(nick, message.params[1], userDataWithChannel);
+                await this.addChatMessage(nick, message.params[1], userDataWithChannel);
                 return;
         }
     }
@@ -2150,13 +2207,34 @@ class TwitchChat {
         this.syncMessageCount();
     }
     
-    updateExistingMessages() {
+    async updateExistingMessages() {
         if (!this.chatMessagesElement) return;
         
         const messages = this.chatMessagesElement.querySelectorAll('.message');
-        messages.forEach(message => {
+        for (const message of messages) {
             // Обновляем настройки шрифтов для каждого сообщения
-            message.style.fontFamily = this.settings.fontFamily;
+            await this.applyFontToElement(message, this.settings.fontFamily);
+            
+            // Применяем шрифт также к вложенным элементам
+            const usernameElement = message.querySelector('.username');
+            const textElement = message.querySelector('.text');
+            
+            if (usernameElement) {
+                usernameElement.style.fontFamily = this.settings.fontFamily;
+                usernameElement.style.fontSize = this.settings.fontSize + 'px';
+                usernameElement.style.fontWeight = this.settings.fontWeight;
+                usernameElement.style.lineHeight = this.settings.lineHeight;
+                usernameElement.style.letterSpacing = this.settings.letterSpacing + 'px';
+            }
+            
+            if (textElement) {
+                textElement.style.fontFamily = this.settings.fontFamily;
+                textElement.style.fontSize = this.settings.fontSize + 'px';
+                textElement.style.fontWeight = this.settings.fontWeight;
+                textElement.style.lineHeight = this.settings.lineHeight;
+                textElement.style.letterSpacing = this.settings.letterSpacing + 'px';
+            }
+            
             message.style.fontSize = this.settings.fontSize + 'px';
             message.style.fontWeight = this.settings.fontWeight;
             message.style.lineHeight = this.settings.lineHeight;
@@ -2183,7 +2261,7 @@ class TwitchChat {
             
             // Обновляем фон сообщения
             this.applyMessageBackground(message);
-        });
+        }
     }
     
     getAnimationName(animationType) {
@@ -2324,7 +2402,7 @@ class TwitchChat {
         }
     }
     
-    addChatMessage(username, text, userData = {}) {
+    async addChatMessage(username, text, userData = {}) {
         console.log('addChatMessage called:', username, text, userData);
         if (!this.chatMessagesElement) {
             console.error('chatMessagesElement is null!');
@@ -2396,17 +2474,6 @@ class TwitchChat {
         // Применяем выравнивание рамки
         messageElement.classList.add(`border-align-${this.settings.borderAlignment}`);
         
-        // Применяем настройки шрифтов к сообщению
-        messageElement.style.fontFamily = this.settings.fontFamily;
-        messageElement.style.fontSize = this.settings.fontSize + 'px';
-        messageElement.style.fontWeight = this.settings.fontWeight;
-        messageElement.style.lineHeight = this.settings.lineHeight;
-        messageElement.style.letterSpacing = this.settings.letterSpacing + 'px';
-        messageElement.style.color = this.settings.fontColor;
-        
-        // Применяем эффекты текста к сообщению
-        this.applyTextEffectsToMessage(messageElement);
-        
         // Применяем расстояние между сообщениями
         messageElement.style.marginBottom = this.settings.messageSpacing + 'px';
         
@@ -2452,6 +2519,38 @@ class TwitchChat {
         }
         
         messageElement.innerHTML = messageHtml;
+        
+        // Применяем настройки шрифтов к сообщению ПОСЛЕ создания бейджиков
+        await this.applyFontToElement(messageElement, this.settings.fontFamily);
+        
+        // Применяем шрифт также к вложенным элементам
+        const usernameElement = messageElement.querySelector('.username');
+        const textElement = messageElement.querySelector('.text');
+        
+        if (usernameElement) {
+            usernameElement.style.fontFamily = this.settings.fontFamily;
+            usernameElement.style.fontSize = this.settings.fontSize + 'px';
+            usernameElement.style.fontWeight = this.settings.fontWeight;
+            usernameElement.style.lineHeight = this.settings.lineHeight;
+            usernameElement.style.letterSpacing = this.settings.letterSpacing + 'px';
+        }
+        
+        if (textElement) {
+            textElement.style.fontFamily = this.settings.fontFamily;
+            textElement.style.fontSize = this.settings.fontSize + 'px';
+            textElement.style.fontWeight = this.settings.fontWeight;
+            textElement.style.lineHeight = this.settings.lineHeight;
+            textElement.style.letterSpacing = this.settings.letterSpacing + 'px';
+        }
+        
+        messageElement.style.fontSize = this.settings.fontSize + 'px';
+        messageElement.style.fontWeight = this.settings.fontWeight;
+        messageElement.style.lineHeight = this.settings.lineHeight;
+        messageElement.style.letterSpacing = this.settings.letterSpacing + 'px';
+        messageElement.style.color = this.settings.fontColor;
+        
+        // Применяем эффекты текста к сообщению
+        this.applyTextEffectsToMessage(messageElement);
         
         // Добавляем сообщение в зависимости от направления чата
         this.addMessageByDirection(messageElement);
@@ -2514,27 +2613,18 @@ class TwitchChat {
         
         // Обработка Twitch бейджей из IRC тегов (новая система)
         if (typeof(userData.badges) === 'string') {
-            console.log('🏷️ Обрабатываем бейджи пользователя:', userData.badges);
-            
             userData.badges.split(',').forEach(badge => {
                 const [badgeType, badgeVersion] = badge.split('/');
-                console.log('🏷️ Обрабатываем бейдж:', badgeType, badgeVersion);
-                
-                // Используем новую систему бейджей
-                const badgeKey = `${badgeType}/${badgeVersion}`;
-                if (this.badges[badgeKey]) {
-                    const badgeData = this.badges[badgeKey];
-                    badgeElements.push(`<img class="badge" src="${badgeData.image}" alt="${badgeData.title}" title="${badgeData.description}" />`);
-                    console.log('✅ Бейдж найден в кэше:', badgeKey);
-                    } else {
-                    // Fallback на базовые ролевые значки для канала
+                const badgeData = this.getBadgeData(badgeType, badgeVersion);
+                if (badgeData) {
+                    const badgeUrl = badgeData.image_url_4x || badgeData.image_url_2x || badgeData.image_url_1x;
+                    const title = badgeData.title || badgeType;
+                    const description = badgeData.description || '';
+                    badgeElements.push(`<img class="badge" src="${badgeUrl}" alt="${title}" title="${description}" />`);
+                } else {
                     const fallbackBadge = this.getFallbackBadge(badgeType);
                     if (fallbackBadge) {
                         badgeElements.push(fallbackBadge);
-                        console.log('🔄 Используем fallback бейдж для роли:', badgeType);
-                    } else {
-                        // Fallback на старую систему
-                        this.loadBadgeDirectly(badgeType, badgeVersion, badgeElements);
                     }
                 }
             });
@@ -2555,9 +2645,26 @@ class TwitchChat {
         return badgeElements.join('');
     }
     
+    getBadgeData(badgeType, badgeVersion) {
+        const channelId = this.channelNumericId;
+        if (this.badgeCache.has(channelId)) {
+            const cache = this.badgeCache.get(channelId);
+            if (cache.channel[badgeType] && cache.channel[badgeType].versions[badgeVersion]) {
+                return cache.channel[badgeType].versions[badgeVersion];
+            }
+            if (cache.global[badgeType] && cache.global[badgeType].versions[badgeVersion]) {
+                return cache.global[badgeType].versions[badgeVersion];
+            }
+        }
+        return null;
+    }
+    
     getBadgeUrl(badgeType, badgeVersion) {
-        // Используем новую систему бейджей
-        return this.getBadgeUrlNew(badgeType, badgeVersion);
+        const badgeData = this.getBadgeData(badgeType, badgeVersion);
+        if (badgeData) {
+            return badgeData.image_url_4x || badgeData.image_url_2x || badgeData.image_url_1x;
+        }
+        return null;
     }
     
     // Загружаем пользовательские бейджи (BTTV, Chatterino)
@@ -3014,6 +3121,135 @@ class TwitchChat {
         return div.innerHTML;
     }
     
+    // Новая система загрузки шрифтов
+    async loadFont(fontFamily) {
+        if (!fontFamily) return;
+        
+        // Извлекаем название шрифта из CSS значения
+        const fontName = this.extractFontName(fontFamily);
+        console.log('🔤 Загружаем шрифт:', fontName, 'из:', fontFamily);
+        
+        // Проверяем, является ли это системный шрифт
+        if (this.isSystemFont(fontName)) {
+            console.log('💻 Используем системный шрифт:', fontName);
+            return;
+        }
+        
+        // Проверяем, не загружен ли уже этот шрифт
+        if (this.isFontLoaded(fontName)) {
+            console.log('✅ Шрифт уже загружен:', fontName);
+            return;
+        }
+        
+        // Загружаем шрифт из Google Fonts
+        console.log('🌐 Загружаем Google Font:', fontName);
+        await this.loadGoogleFont(fontName);
+    }
+    
+    // Извлекает название шрифта из CSS значения
+    extractFontName(fontFamily) {
+        return fontFamily.replace(/['"]/g, '').split(',')[0].trim();
+    }
+    
+    // Проверяет, является ли шрифт системным
+    isSystemFont(fontName) {
+        const systemFonts = [
+            // Системные шрифты
+            'Arial', 'Helvetica', 'Times New Roman', 'Times', 'Courier New', 'Courier',
+            'Verdana', 'Georgia', 'Palatino', 'Garamond', 'Bookman', 'Comic Sans MS',
+            'Trebuchet MS', 'Arial Black', 'Impact', 'Tahoma', 'Geneva', 'Lucida Console',
+            'Monaco', 'Menlo', 'SF Mono', 'Consolas', 'Lucida Console',
+            // Minecraft шрифты (системные)
+            'Minecraft', 'Minecraft TEN', 'Minecraft RUS', 'Minecraft Bold',
+            'Minecraft Italic', 'Minecraft Bold Italic', 'Minecraft Regular',
+            'Minecraft Even', 'Minecraft Odd', 'Minecraft Unicode'
+        ];
+        
+        const isSystem = systemFonts.includes(fontName);
+        console.log('🔍 Проверка системного шрифта:', fontName, '->', isSystem ? 'ДА' : 'НЕТ');
+        return isSystem;
+    }
+    
+    // Проверяет, загружен ли уже шрифт
+    isFontLoaded(fontName) {
+        // Проверяем существующие ссылки на шрифты
+        const existingLinks = document.querySelectorAll('link[href*="fonts.googleapis.com"]');
+        for (const link of existingLinks) {
+            if (link.href.includes(fontName.replace(/\s+/g, '+'))) {
+                return true;
+            }
+        }
+        
+        // Проверяем, есть ли шрифт в общем импорте
+        const generalLink = document.querySelector('link[href*="fonts.googleapis.com/css2"]');
+        if (generalLink && generalLink.href.includes(fontName.replace(/\s+/g, '+'))) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // Загружает шрифт из Google Fonts
+    async loadGoogleFont(fontName) {
+        return new Promise((resolve, reject) => {
+            console.log('🌐 Загружаем Google Font:', fontName);
+            
+            const link = document.createElement('link');
+            link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/\s+/g, '+')}:wght@300;400;500;600;700&display=swap`;
+            link.rel = 'stylesheet';
+            
+            link.onload = () => {
+                console.log('✅ Google Font загружен:', fontName);
+                resolve();
+            };
+            
+            link.onerror = () => {
+                console.warn('⚠️ Ошибка загрузки Google Font:', fontName);
+                reject(new Error(`Не удалось загрузить шрифт: ${fontName}`));
+            };
+            
+            document.head.appendChild(link);
+        });
+    }
+    
+    // Применяет шрифт к элементу
+    async applyFontToElement(element, fontFamily) {
+        if (!element || !fontFamily) return;
+        
+        const fontName = this.extractFontName(fontFamily);
+        
+        // Для системных шрифтов применяем напрямую
+        if (this.isSystemFont(fontName)) {
+            element.style.fontFamily = fontFamily;
+            console.log('✅ Системный шрифт применен:', fontName);
+            return;
+        }
+        
+        // Для Google Fonts ждем загрузки и применяем
+        try {
+            await this.loadFont(fontFamily);
+            element.style.fontFamily = fontFamily;
+            console.log('✅ Google Font применен к элементу:', fontName);
+        } catch (error) {
+            console.warn('⚠️ Fallback на системный шрифт:', error.message);
+            // Fallback на системный шрифт
+            const fallbackFont = this.getFallbackFont(fontName);
+            element.style.fontFamily = fallbackFont;
+        }
+    }
+    
+    // Возвращает fallback шрифт
+    getFallbackFont(fontName) {
+        // Определяем категорию шрифта и возвращаем подходящий fallback
+        if (fontName.toLowerCase().includes('mono') || fontName.toLowerCase().includes('code')) {
+            return 'Consolas, Monaco, Courier New, monospace';
+        }
+        if (fontName.toLowerCase().includes('serif')) {
+            return 'Times New Roman, Times, serif';
+        }
+        return 'Arial, Helvetica, sans-serif';
+    }
+    
     // Очистка сообщения по ID
     clearMessage(messageId) {
         setTimeout(() => {
@@ -3123,8 +3359,6 @@ class TwitchChat {
                 stack: err.stack,
                 name: err.name
             });
-            // В случае ошибки, используем fallback бейджи
-            this.loadFallbackGlobalBadges();
         });
     }
     
@@ -3209,91 +3443,6 @@ class TwitchChat {
         } else {
             console.log('ℹ️ Специальные бейджи не найдены, но все глобальные бейджи загружены');
         }
-    }
-    
-    
-    // Fallback глобальные бейджи на случай ошибки API
-    loadFallbackGlobalBadges() {
-        console.log('🔄 Загружаем fallback глобальные бейджи');
-        if (!this.badgeCache.has('global')) {
-            this.badgeCache.set('global', { global: {}, channel: {} });
-            console.log('✅ Создан кэш для глобальных бейджей');
-        }
-        
-        // Актуальные глобальные бейджи Twitch (2024)
-        const fallbackGlobalBadges = {
-            'admin': {
-                set_id: 'admin',
-                versions: {
-                    '1': {
-                        id: '1',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/9ef7e029-4cdf-4d4d-a0d5-e2b3fb2583fe/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/9ef7e029-4cdf-4d4d-a0d5-e2b3fb2583fe/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/9ef7e029-4cdf-4d4d-a0d5-e2b3fb2583fe/3'
-                    }
-                }
-            },
-            'global_mod': {
-                set_id: 'global_mod',
-                versions: {
-                    '1': {
-                        id: '1',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/9388c43e-4ce7-4e94-b2a1-b936d6e4824a/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/9388c43e-4ce7-4e94-b2a1-b936d6e4824a/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/9388c43e-4ce7-4e94-b2a1-b936d6e4824a/3'
-                    }
-                }
-            },
-            'staff': {
-                set_id: 'staff',
-                versions: {
-                    '1': {
-                        id: '1',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/d97c37bd-a6f5-4c38-8d57-2856b5b7a1c2/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/d97c37bd-a6f5-4c38-8d57-2856b5b7a1c2/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/d97c37bd-a6f5-4c38-8d57-2856b5b7a1c2/3'
-                    }
-                }
-            },
-            'twitchbot': {
-                set_id: 'twitchbot',
-                versions: {
-                    '1': {
-                        id: '1',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/df09a657-6074-41a7-a59c-70c930a2c002/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/df09a657-6074-41a7-a59c-70c930a2c002/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/df09a657-6074-41a7-a59c-70c930a2c002/3'
-                    }
-                }
-            },
-            'premium': {
-                set_id: 'premium',
-                versions: {
-                    '1': {
-                        id: '1',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/bbbe0db0-a598-423e-86d0-f9fd0c0fd214/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/bbbe0db0-a598-423e-86d0-f9fd0c0fd214/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/bbbe0db0-a598-423e-86d0-f9fd0c0fd214/3'
-                    }
-                }
-            },
-            'bits': {
-                set_id: 'bits',
-                versions: {
-                    '1': {
-                        id: '1',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-5f0e5b5b5b5b/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-5f0e5b5b5b5b/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-5f0e5b5b5b5b/3'
-                    }
-                }
-            }
-        };
-        
-        this.badgeCache.get('global').global = fallbackGlobalBadges;
-        console.log('✅ Fallback глобальные бейджи загружены:', Object.keys(fallbackGlobalBadges));
-        console.log('📋 Кэш глобальных бейджей:', this.badgeCache.get('global'));
-        
     }
     
     // Упрощенная загрузка бейджа напрямую через Twitch API
@@ -3487,8 +3636,6 @@ class TwitchChat {
     
     // Загрузка дополнительных бейджей - используем API как в jChat
     loadAdditionalBadges() {
-        // Сначала загружаем fallback глобальные бейджи для немедленного использования
-        this.loadFallbackGlobalBadges();
         
         // Затем пытаемся загрузить актуальные глобальные бейджи Twitch
         this.loadTwitchGlobalBadges();
@@ -3628,146 +3775,73 @@ class TwitchChat {
             })
             .catch(err => {
             console.warn('Twitch channel badges error:', err.message);
-            // В случае ошибки, используем fallback бейджи канала
-            this.loadFallbackChannelBadges(channelId);
         });
     }
-    
-    // Fallback бейджи канала на случай ошибки API
-    loadFallbackChannelBadges(channelId) {
-        console.log('Loading fallback channel badges for:', channelId);
-        if (!this.badgeCache.has(channelId)) {
-            this.badgeCache.set(channelId, { global: {}, channel: {} });
-        }
-        
-        // Базовые бейджи канала Twitch
-        const fallbackChannelBadges = {
-            'broadcaster': {
-                set_id: 'broadcaster',
-                versions: {
-                    '1': {
-                        id: '1',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/3'
-                    }
-                }
-            },
-            'moderator': {
-                set_id: 'moderator',
-                versions: {
-                    '1': {
-                        id: '1',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/3'
-                    }
-                }
-            },
-            'vip': {
-                set_id: 'vip',
-                versions: {
-                    '1': {
-                        id: '1',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/3'
-                    }
-                }
-            },
-            'subscriber': {
-                set_id: 'subscriber',
-                versions: {
-                    '0': {
-                        id: '0',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3'
-                    },
-                    '3': {
-                        id: '3',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3'
-                    },
-                    '6': {
-                        id: '6',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3'
-                    },
-                    '12': {
-                        id: '12',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3'
-                    },
-                    '24': {
-                        id: '24',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3'
-                    }
-                }
-            }
-        };
-        
-        this.badgeCache.get(channelId).channel = fallbackChannelBadges;
-        console.log('Fallback channel badges loaded:', Object.keys(fallbackChannelBadges));
-    }
+
     
     // Загрузка бейджей Twitch через API - как в jChat
-    loadBadges(channelId) {
-        this.badges = {};
-        
-        // Сначала загружаем fallback бейджи канала для немедленного использования
-        if (channelId && channelId !== 'global') {
-            this.loadFallbackChannelBadges(channelId);
+    async loadBadges(channelId) {
+        try {
+            if (!this.twitchOAuthToken) {
+                console.warn("Отсутствует OAuth токен. Для запросов к Twitch Helix API требуется авторизация, но мы попробуем без него.");
+            }
+
+            const headers = {
+                'Client-ID': this.twitchClientId,
+            };
+            if (this.twitchOAuthToken) {
+                headers['Authorization'] = `Bearer ${this.twitchOAuthToken}`;
+            }
+
+            const [globalBadgesRes, channelBadgesRes] = await Promise.all([
+                fetch('https://api.twitch.tv/helix/chat/badges/global', { headers }).then(res => {
+                    if (!res.ok) throw new Error(`Failed to fetch global badges: ${res.statusText}`);
+                    return res.json();
+                }),
+                fetch(`https://api.twitch.tv/helix/chat/badges?broadcaster_id=${channelId}`, { headers }).then(res => {
+                    if (!res.ok) throw new Error(`Failed to fetch channel badges: ${res.statusText}`);
+                    return res.json();
+                })
+            ]);
+
+            const formatBadges = (response) => {
+                if (!response || !response.data) return {};
+                const badgeSets = {};
+                for (const set of response.data) {
+                    const versions = {};
+                    for (const version of set.versions) {
+                        versions[version.id] = version;
+                    }
+                    badgeSets[set.set_id] = { versions };
+                }
+                return badgeSets;
+            };
+
+            const globalBadges = formatBadges(globalBadgesRes);
+            const channelBadges = formatBadges(channelBadgesRes);
+
+            this.badgeCache.set(channelId, {
+                global: globalBadges,
+                channel: channelBadges
+            });
+
+            console.log('Значки успешно загружены с Helix API для канала:', channelId);
+
+        } catch (error) {
+            console.warn('Ошибка загрузки значков Twitch из Helix API, используется резервный набор:', error.message);
+            const fallbackBadges = {
+                "admin": { "versions": { "1": { "image_url_4x": "https://static-cdn.jtvnw.net/badges/v1/d12a2e27-16f6-41d0-ab77-b780518f00a3/3" }}},
+                "broadcaster": { "versions": { "1": { "image_url_4x": "https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/3" }}},
+                "moderator": { "versions": { "1": { "image_url_4x": "https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/3" }}},
+                "partner": { "versions": { "1": { "image_url_4x": "https://static-cdn.jtvnw.net/badges/v1/d12a2e27-16f6-41d0-ab77-b780518f00a3/3" }}},
+                "vip": { "versions": { "1": { "image_url_4x": "https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/3" }}},
+                "premium": { "versions": { "1": { "image_url_4x": "https://static-cdn.jtvnw.net/badges/v1/bbbe0db0-a598-423e-86d0-f9fd98d5f39d/3" }}},
+                "turbo": { "versions": { "1": { "image_url_4x": "https://static-cdn.jtvnw.net/badges/v1/bd444ec6-8f34-4bf9-91f4-af1e3428d80f/3" }}},
+                "twitch-recap-2024": { "versions": { "1": { "image_url_4x": "https://static-cdn.jtvnw.net/badges/v1/702b8146-e623-4560-a43b-a50a0b65f743/3" } } }
+            };
+            this.badgeCache.set(channelId, { global: fallbackBadges, channel: {} });
+            console.log('Используется резервный набор значков для канала:', channelId);
         }
-        
-        // Затем пытаемся загрузить актуальные бейджи канала через API
-        this.loadTwitchChannelBadges(channelId);
-        
-        // Fallback данные на случай ошибки API
-        console.log('Using fallback badges for channel:', this.channel);
-        this.badges = {
-            'broadcaster:1': 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/2',
-            'moderator:1': 'https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1',
-            'vip:1': 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1',
-            'subscriber:1': 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/1',
-            'subscriber:2': 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/2',
-            'subscriber:3': 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3',
-            'subscriber:6': 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/6',
-            'subscriber:12': 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/12',
-            'subscriber:24': 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/24',
-            'subscriber:36': 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/36',
-            'subscriber:48': 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/48',
-            'subscriber:60': 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/60',
-            'subscriber:72': 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/72',
-            'subscriber:84': 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/84',
-            'subscriber:96': 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/96',
-            'subscriber:108': 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/108',
-            'subscriber:120': 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/120',
-            'premium:1': 'https://static-cdn.jtvnw.net/badges/v1/bbbe0db0-a598-423e-86d0-f9fd98d5f39d/1',
-            'bits:1': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/1',
-            'bits:100': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/100',
-            'bits:1000': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/1000',
-            'bits:5000': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/5000',
-            'bits:10000': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/10000',
-            'bits:25000': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/25000',
-            'bits:50000': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/50000',
-            'bits:100000': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/100000',
-            'bits:200000': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/200000',
-            'bits:300000': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/300000',
-            'bits:400000': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/400000',
-            'bits:500000': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/500000',
-            'bits:600000': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/600000',
-            'bits:700000': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/700000',
-            'bits:800000': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/800000',
-            'bits:900000': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/900000',
-            'bits:1000000': 'https://static-cdn.jtvnw.net/badges/v1/73b5c3fb-24f9-4a82-a852-2d7a9d4e6d8d/1000000'
-        };
-        
     }
     
     // Функции для управления каналами
@@ -4272,131 +4346,7 @@ class TwitchChat {
     // НОВАЯ СИСТЕМА БЕЙДЖЕЙ - Загрузка всех бейджей с Twitch API
     loadAllBadges() {
         console.log('🚀 Загружаем все бейджи с Twitch API...');
-        
-        // Инициализируем кэш бейджей
-        if (!this.badgeCache.has('global')) {
-            this.badgeCache.set('global', { global: {}, channel: {} });
-        }
-        
-        // Загружаем fallback бейджи для немедленного использования
-        this.loadFallbackBadges();
-        
-        // Загружаем глобальные бейджи
-        this.loadGlobalBadgesFromTwitch();
-        
-        // Получаем числовой ID канала и загружаем его бейджи
         this.getChannelIdAndLoadBadges();
-    }
-    
-    // Загрузка бейджей по образцу эмодзи
-    loadBadges(channelID) {
-        console.log('🏷️ Загружаем бейджи для канала:', channelID);
-        
-        // Инициализируем кэш бейджей
-        this.badges = {};
-        
-        // Загружаем глобальные бейджи
-        this.loadGlobalBadges();
-        
-        // Загружаем бейджи канала
-        this.loadChannelBadges(channelID);
-    }
-    
-    // Загрузка глобальных бейджей (по образцу BTTV)
-    loadGlobalBadges() {
-        console.log('🌐 Загружаем глобальные бейджи...');
-        
-        const headers = {
-            'Client-ID': this.twitchClientId
-        };
-        
-        if (this.twitchOAuthToken) {
-            headers['Authorization'] = `Bearer ${this.twitchOAuthToken}`;
-        }
-        
-        fetch('https://api.twitch.tv/helix/chat/badges/global', { headers })
-            .then(res => {
-                if (!res.ok) {
-                    throw new Error(`HTTP ${res.status}`);
-                }
-                return res.json();
-            })
-            .then(data => {
-                if (data.data && Array.isArray(data.data)) {
-                    data.data.forEach(badge => {
-                        this.globalBadges[badge.set_id] = badge;
-                        
-                        // Добавляем в общий кэш бейджей
-                        if (badge.versions) {
-                            Object.entries(badge.versions).forEach(([version, versionData]) => {
-                                const badgeKey = `${badge.set_id}/${version}`;
-                                this.badges[badgeKey] = {
-                                    id: badge.set_id,
-                                    version: version,
-                                    image: versionData.image_url_1x,
-                                    title: versionData.title || badge.set_id,
-                                    description: versionData.description || ''
-                                };
-                            });
-                        }
-                    });
-                    console.log('✅ Глобальные бейджи загружены:', Object.keys(this.globalBadges).length);
-                }
-            })
-            .catch(err => {
-                console.warn('❌ Ошибка загрузки глобальных бейджей:', err.message);
-            });
-    }
-    
-    // Загрузка бейджей канала (по образцу BTTV)
-    loadChannelBadges(channelID) {
-        if (!channelID) {
-            console.log('⚠️ ID канала не указан для загрузки бейджей');
-            return;
-        }
-        
-        console.log('🏠 Загружаем бейджи канала:', channelID);
-        
-        const headers = {
-            'Client-ID': this.twitchClientId
-        };
-        
-        if (this.twitchOAuthToken) {
-            headers['Authorization'] = `Bearer ${this.twitchOAuthToken}`;
-        }
-        
-        fetch(`https://api.twitch.tv/helix/chat/badges?broadcaster_id=${channelID}`, { headers })
-            .then(res => {
-                if (!res.ok) {
-                    throw new Error(`HTTP ${res.status}`);
-                }
-                return res.json();
-            })
-            .then(data => {
-                if (data.data && Array.isArray(data.data)) {
-                    data.data.forEach(badge => {
-                        this.channelBadges[badge.set_id] = badge;
-                        
-                        // Добавляем в общий кэш бейджей
-                        if (badge.versions) {
-                            Object.entries(badge.versions).forEach(([version, versionData]) => {
-                                const badgeKey = `${badge.set_id}/${version}`;
-                                this.badges[badgeKey] = {
-                                    id: badge.set_id,
-                                    version: version,
-                                    image: versionData.image_url_1x,
-                                    title: versionData.title || badge.set_id,
-                                    description: versionData.description || ''
-                                };
-                            });
-                        }
-                    });
-                    console.log('✅ Бейджи канала загружены:', Object.keys(this.channelBadges).length);
-                }
-            })
-            .catch(err => {
-                console.warn('❌ Ошибка загрузки бейджей канала:', err.message);
-            });
     }
     
     // Получение числового ID канала через Twitch API
@@ -4431,7 +4381,7 @@ class TwitchChat {
                 console.log('✅ Получен числовой ID канала:', channelId);
                 
                 // Загружаем бейджи канала (включая значки сообщества)
-                this.loadChannelBadgesFromTwitch();
+                await this.loadBadges(channelId);
             } else {
                 console.log('❌ Канал не найден:', this.channel);
             }
@@ -4582,69 +4532,6 @@ class TwitchChat {
         });
     }
     
-    // Fallback значки сообщества
-    loadFallbackCommunityBadges() {
-        console.log('🔄 Загружаем fallback значки сообщества');
-        
-        if (!this.badgeCache.has(this.channelNumericId)) {
-            this.badgeCache.set(this.channelNumericId, { global: {}, channel: {} });
-        }
-        
-        // Базовые значки сообщества (subscriber бейджи)
-        const fallbackCommunityBadges = {
-            'subscriber': {
-                set_id: 'subscriber',
-                title: 'Подписчик',
-                description: 'Значки подписчиков канала',
-                versions: {
-                    '1': {
-                        id: '1',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3',
-                        title: 'Подписчик (1 месяц)',
-                        description: 'Подписчик канала на 1 месяц'
-                    },
-                    '3': {
-                        id: '3',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3',
-                        title: 'Подписчик (3 месяца)',
-                        description: 'Подписчик канала на 3 месяца'
-                    },
-                    '6': {
-                        id: '6',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/6',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/6',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/6',
-                        title: 'Подписчик (6 месяцев)',
-                        description: 'Подписчик канала на 6 месяцев'
-                    },
-                    '12': {
-                        id: '12',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/12',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/12',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/12',
-                        title: 'Подписчик (12 месяцев)',
-                        description: 'Подписчик канала на 12 месяцев'
-                    },
-                    '24': {
-                        id: '24',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/24',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/24',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/24',
-                        title: 'Подписчик (24 месяца)',
-                        description: 'Подписчик канала на 24 месяца'
-                    }
-                }
-            }
-        };
-        
-        this.badgeCache.get(this.channelNumericId).channel = fallbackCommunityBadges;
-        console.log('✅ Fallback значки сообщества загружены:', Object.keys(fallbackCommunityBadges));
-    }
-    
     // Загрузка бейджей канала с Twitch API
     loadChannelBadgesFromTwitch() {
         if (!this.channelNumericId) {
@@ -4722,113 +4609,6 @@ class TwitchChat {
             .catch(err => {
                 console.error('❌ Ошибка загрузки бейджей канала:', err);
             });
-    }
-    
-    // Загрузка fallback бейджей для немедленного использования
-    loadFallbackBadges() {
-        console.log('🔄 Загружаем fallback бейджи...');
-        
-        // Fallback глобальные бейджи
-        const fallbackGlobalBadges = {
-            'admin': {
-                set_id: 'admin',
-                versions: {
-                    '1': {
-                        id: '1',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/9ef7e029-4cdf-4d4d-a0d5-e2b3fb2583fe/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/9ef7e029-4cdf-4d4d-a0d5-e2b3fb2583fe/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/9ef7e029-4cdf-4d4d-a0d5-e2b3fb2583fe/3'
-                    }
-                }
-            },
-            'global_mod': {
-                set_id: 'global_mod',
-                versions: {
-                    '1': {
-                        id: '1',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/9388c43e-4ce7-4e94-b2a1-b936d6e4824a/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/9388c43e-4ce7-4e94-b2a1-b936d6e4824a/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/9388c43e-4ce7-4e94-b2a1-b936d6e4824a/3'
-                    }
-                }
-            },
-            'staff': {
-                set_id: 'staff',
-                versions: {
-                    '1': {
-                        id: '1',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/d97c37bd-a6f5-4c38-8d57-2856b5b7a1c2/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/d97c37bd-a6f5-4c38-8d57-2856b5b7a1c2/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/d97c37bd-a6f5-4c38-8d57-2856b5b7a1c2/3'
-                    }
-                }
-            },
-            'twitchbot': {
-                set_id: 'twitchbot',
-                versions: {
-                    '1': {
-                        id: '1',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/df09a657-6074-41a7-a59c-70c930a2c002/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/df09a657-6074-41a7-a59c-70c930a2c002/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/df09a657-6074-41a7-a59c-70c930a2c002/3'
-                    }
-                }
-            }
-        };
-        
-        // Fallback бейджи канала
-        const fallbackChannelBadges = {
-            'broadcaster': {
-                set_id: 'broadcaster',
-                versions: {
-                    '1': {
-                        id: '1',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/3'
-                    }
-                }
-            },
-            'moderator': {
-                set_id: 'moderator',
-                versions: {
-                    '1': {
-                        id: '1',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/3'
-                    }
-                }
-            },
-            'vip': {
-                set_id: 'vip',
-                versions: {
-                    '1': {
-                        id: '1',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/3'
-                    }
-                }
-            },
-            'subscriber': {
-                set_id: 'subscriber',
-                versions: {
-                    '0': {
-                        id: '0',
-                        image_url_1x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/1',
-                        image_url_2x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/2',
-                        image_url_4x: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3'
-                    }
-                }
-            }
-        };
-        
-        // Сохраняем fallback бейджи в кэш
-        this.badgeCache.get('global').global = fallbackGlobalBadges;
-        this.badgeCache.get('global').channel = fallbackChannelBadges;
-        
-        console.log('✅ Fallback бейджи загружены');
     }
     
     // Получение URL бейджа из новой системы
@@ -4934,9 +4714,8 @@ class TwitchChat {
                 }
                 
                 // Добавляем к существующей тени или создаем новую
-                if (this.settings.textShadowEnabled) {
-                    const existingShadow = `${this.settings.textShadowX}px ${this.settings.textShadowY}px ${this.settings.textShadowBlur}px ${this.settings.textShadowColor}`;
-                    this.chatMessagesElement.style.textShadow = `${existingShadow}, ${insetShadows.join(', ')}`;
+                if (this.chatMessagesElement.style.textShadow) {
+                    this.chatMessagesElement.style.textShadow += `, ${insetShadows.join(', ')}`;
                 } else {
                     this.chatMessagesElement.style.textShadow = insetShadows.join(', ');
                 }
@@ -4992,9 +4771,8 @@ class TwitchChat {
                 }
                 
                 // Добавляем к существующей тени или создаем новую
-                if (this.settings.textShadowEnabled) {
-                    const existingShadow = `${this.settings.textShadowX}px ${this.settings.textShadowY}px ${this.settings.textShadowBlur}px ${this.settings.textShadowColor}`;
-                    messageElement.style.textShadow = `${existingShadow}, ${insetShadows.join(', ')}`;
+                if (messageElement.style.textShadow) {
+                    messageElement.style.textShadow += `, ${insetShadows.join(', ')}`;
                 } else {
                     messageElement.style.textShadow = insetShadows.join(', ');
                 }
