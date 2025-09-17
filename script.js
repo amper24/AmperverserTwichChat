@@ -187,8 +187,7 @@ class TwitchChat {
                     resolve(imageUrl);
                 };
                 img.onerror = () => {
-                    console.warn('Не удалось загрузить изображение из локального файла:', imageUrl);
-                    console.warn('Это может быть связано с CORS ограничениями при открытии файлов локально');
+                    // CORS ошибки скрыты
                     resolve(''); // Возвращаем пустую строку при ошибке
                 };
                 img.src = imageUrl;
@@ -216,14 +215,7 @@ class TwitchChat {
             const hasMessageBg2 = this.settings.messageBackgroundImage2 && this.settings.messageBackgroundImage2 !== '';
             
             if (hasBackgroundImage || hasMessageBg1 || hasMessageBg2) {
-                console.log('ℹ️ Информация о загрузке изображений:');
-                console.log('📁 Файлы открыты локально (file://)');
-                console.log('⚠️  Внешние изображения могут не загружаться из-за CORS ограничений');
-                console.log('💡 Решения для работы с локальными файлами:');
-                console.log('   1. Запустите локальный веб-сервер (например, Live Server в VS Code)');
-                console.log('   2. Используйте браузер с отключенной CORS политикой');
-                console.log('   3. Разместите файлы на веб-сервере');
-                console.log('   4. Используйте локальные изображения (путь к файлам на компьютере)');
+                // CORS информационные сообщения отключены
                 
                 if (hasBackgroundImage) {
                     console.log('🖼️  Фоновое изображение:', this.settings.backgroundImage ? 'загружено' : 'не загружено');
@@ -235,8 +227,8 @@ class TwitchChat {
                     console.log('🖼️  Фон сообщений 2:', this.settings.messageBackgroundImage2 ? 'загружен' : 'не загружен');
                 }
                 
-                // Показываем уведомление пользователю
-                this.showLocalFileWarning();
+                // Уведомления об ошибках CORS отключены
+                // this.showLocalFileWarning();
             }
         }
     }
@@ -489,27 +481,14 @@ class TwitchChat {
                 this.chatContainer.style.position = 'relative';
                 this.chatContainer.style.backdropFilter = 'blur(10px)';
                 
-                // Если есть градиент, комбинируем его с фоновым изображением
-                if (this.settings.backgroundGradient !== 'none') {
-                    // Применяем прозрачность к цветам градиента
-                    const color1WithOpacity = this.hexToRgba(this.settings.gradientColor1, opacity);
-                    const color2WithOpacity = this.hexToRgba(this.settings.gradientColor2, opacity);
-                    
-                    const gradient = this.createGradient(
-                        this.settings.backgroundGradient,
-                        color1WithOpacity,
-                        color2WithOpacity,
-                        this.settings.gradientDirection
-                    );
-                    this.chatContainer.style.background = `${gradient}, url(${this.settings.backgroundImage})`;
-                } else {
-                    this.chatContainer.style.background = `rgba(255, 255, 255, ${opacity * 0.05})`;
-                    this.chatContainer.style.backgroundImage = `url(${this.settings.backgroundImage})`;
-                }
-                
-                this.chatContainer.style.backgroundSize = this.settings.backgroundSize;
-                this.chatContainer.style.backgroundPosition = this.settings.backgroundPosition;
-                this.chatContainer.style.backgroundRepeat = 'no-repeat';
+                // Убираем фоновое изображение с основного контейнера и делаем его полностью прозрачным
+                this.chatContainer.style.background = 'transparent';
+                this.chatContainer.style.backgroundImage = '';
+                this.chatContainer.style.backgroundSize = '';
+                this.chatContainer.style.backgroundPosition = '';
+                this.chatContainer.style.backgroundRepeat = '';
+                this.chatContainer.style.backgroundColor = 'transparent';
+                this.chatContainer.style.setProperty('--fallback-bg', 'transparent');
                 
                 // Удаляем старый псевдоэлемент если есть
                 const oldOverlay = this.chatContainer.querySelector('.background-overlay');
@@ -520,19 +499,40 @@ class TwitchChat {
                 // Создаем новый псевдоэлемент для прозрачности
                 const overlay = document.createElement('div');
                 overlay.className = 'background-overlay';
-                overlay.style.cssText = `
+                
+                // Устанавливаем фоновое изображение на overlay
+                overlay.style.backgroundImage = `url(${this.settings.backgroundImage})`;
+                overlay.style.backgroundSize = this.settings.backgroundSize;
+                overlay.style.backgroundPosition = this.settings.backgroundPosition;
+                overlay.style.backgroundRepeat = 'no-repeat';
+                
+                // Если есть градиент, комбинируем его с фоновым изображением
+                if (this.settings.backgroundGradient !== 'none') {
+                    // Не применяем прозрачность к цветам градиента - используем общую прозрачность
+                    const gradient = this.createGradient(
+                        this.settings.backgroundGradient,
+                        this.settings.gradientColor1,
+                        this.settings.gradientColor2,
+                        this.settings.gradientDirection
+                    );
+                    overlay.style.background = `${gradient}, url(${this.settings.backgroundImage})`;
+                } else {
+                    // Не применяем прозрачность к цвету фона - используем общую прозрачность
+                    overlay.style.background = `${this.settings.backgroundColor}, url(${this.settings.backgroundImage})`;
+                }
+                
+                // Применяем общую прозрачность к overlay
+                overlay.style.opacity = opacity;
+                
+                overlay.style.cssText += `
                     position: absolute;
                     top: 0;
                     left: 0;
                     right: 0;
                     bottom: 0;
-                    background-image: url(${this.settings.backgroundImage});
-                    background-size: ${this.settings.backgroundSize};
-                    background-position: ${this.settings.backgroundPosition};
-                    background-repeat: no-repeat;
-                    opacity: ${opacity};
                     pointer-events: none;
                     z-index: -1;
+                    border-radius: inherit;
                 `;
                 this.chatContainer.appendChild(overlay);
             } else {
@@ -672,6 +672,12 @@ class TwitchChat {
             this.chatContainer.style.setProperty('background-image', gradient, 'important');
             
             console.log('Force applied gradient at end of applySettings:', gradient);
+        }
+        
+        // Применяем смещение по вертикали к контейнеру сообщений
+        if (this.chatMessagesElement) {
+            this.chatMessagesElement.style.transform = `translateY(${this.settings.messageVerticalOffset}px)`;
+            console.log(`Применено смещение по вертикали к контейнеру: ${this.settings.messageVerticalOffset}px`);
         }
     }
     
@@ -1884,6 +1890,43 @@ class TwitchChat {
         }
     }
     
+    scrollChatToNewMessages() {
+        if (!this.chatMessagesElement) return;
+        
+        // Используем requestAnimationFrame для плавной прокрутки
+        requestAnimationFrame(() => {
+            switch (this.settings.chatDirection) {
+                case 'top-to-bottom-new-down':
+                    // Новые вниз - прокручиваем вниз к новым сообщениям
+                    this.chatMessagesElement.scrollTop = this.chatMessagesElement.scrollHeight;
+                    break;
+                case 'top-to-bottom-old-down':
+                    // Старые вниз - новые сверху, прокручиваем вверх к новым
+                    this.chatMessagesElement.scrollTop = 0;
+                    break;
+                case 'bottom-to-top-new-up':
+                    // Новые наверх - прокручиваем вверх к новым сообщениям
+                    this.chatMessagesElement.scrollTop = 0;
+                    break;
+                case 'bottom-to-top-old-up':
+                    // Старые наверх - новые снизу, прокручиваем вниз к новым
+                    this.chatMessagesElement.scrollTop = this.chatMessagesElement.scrollHeight;
+                    break;
+                default:
+                    // По умолчанию прокручиваем вниз
+                    this.chatMessagesElement.scrollTop = this.chatMessagesElement.scrollHeight;
+                    break;
+            }
+            
+            // После прокрутки проверяем границы и удаляем сообщения, которые не влезают
+            setTimeout(() => {
+                this.removeMessagesOutsideBounds();
+                // Дополнительно проверяем, что новое сообщение видно
+                this.ensureNewMessageFits();
+            }, 100);
+        });
+    }
+    
     limitChatMessages() {
         if (!this.chatMessagesElement) return;
         
@@ -1893,162 +1936,218 @@ class TwitchChat {
         // Обновляем maxMessages из настроек
         this.maxMessages = this.settings.maxMessages;
         
-        // Простая логика: если сообщений больше лимита - удаляем самые старые
+        // Проверяем, не выходят ли сообщения за границы контейнера
+        this.removeMessagesOutsideBounds();
+        
+        // Если сообщений больше лимита, удаляем в зависимости от направления чата
         if (messages.length > this.maxMessages) {
-            console.log(`📏 Сообщений больше лимита (${messages.length}/${this.maxMessages}), удаляем самые старые...`);
+            console.log(`📏 Сообщений больше лимита (${messages.length}/${this.maxMessages}), удаляем в зависимости от направления...`);
             
-            // Удаляем лишние сообщения (самые старые)
             const messagesToRemove = messages.length - this.maxMessages;
-            for (let i = 0; i < messagesToRemove; i++) {
-                messages[i].remove();
-            }
-            
-            console.log(`🗑️ Удалено ${messagesToRemove} старых сообщений`);
-            this.syncMessageCount();
-        }
-        
-        // Проверяем, выходят ли сообщения за границы контейнера
-        const chatContainer = this.chatMessagesElement;
-        const containerHeight = chatContainer.clientHeight;
-        
-        // Проверяем, помещаются ли сообщения в контейнер
-        let attempts = 0;
-        const maxAttempts = 50; // Защита от бесконечного цикла
-        
-        while (attempts < maxAttempts) {
-            const currentMessages = this.chatMessagesElement.querySelectorAll('.message');
-            if (currentMessages.length === 0) break;
-            
-            // Проверяем высоту контейнера
-        const containerScrollHeight = chatContainer.scrollHeight;
-        
-            if (containerScrollHeight <= containerHeight) {
-                // Все сообщения помещаются
-                break;
-            }
-            
-            // Удаляем сообщение в зависимости от направления чата
-            let messageToRemove = null;
-            let removeReason = '';
             
             switch (this.settings.chatDirection) {
                 case 'top-to-bottom-new-down':
-                    // Сверху вниз, новые уходят вниз: удаляем самое старое (первое)
-                    messageToRemove = currentMessages[0];
-                    removeReason = 'самое старое (сверху вниз, новые вниз)';
+                case 'bottom-to-top-new-up':
+                    // Удаляем самые старые (первые) сообщения
+                    for (let i = 0; i < messagesToRemove; i++) {
+                        messages[i].remove();
+                    }
                     break;
                 case 'top-to-bottom-old-down':
-                    // Сверху вниз, старые уходят вниз: удаляем самое новое (последнее)
-                    messageToRemove = currentMessages[currentMessages.length - 1];
-                    removeReason = 'самое новое (сверху вниз, старые вниз)';
-                    break;
-                case 'bottom-to-top-new-up':
-                    // Снизу вверх, новые уходят наверх: удаляем самое старое (первое)
-                    messageToRemove = currentMessages[0];
-                    removeReason = 'самое старое (снизу вверх, новые наверх)';
+                    // Старые уходят вниз - удаляем последние (самые старые внизу)
+                    for (let i = messages.length - 1; i >= messages.length - messagesToRemove; i--) {
+                        messages[i].remove();
+                    }
                     break;
                 case 'bottom-to-top-old-up':
-                    // Снизу вверх, старые уходят наверх: удаляем самое новое (последнее)
-                    messageToRemove = currentMessages[currentMessages.length - 1];
-                    removeReason = 'самое новое (снизу вверх, старые наверх)';
+                    // Старые уходят наверх - удаляем первые (самые старые наверху)
+                    for (let i = 0; i < messagesToRemove; i++) {
+                        messages[i].remove();
+                    }
                     break;
                 default:
-                    // По умолчанию: удаляем самое старое (первое) сообщение
-                    messageToRemove = currentMessages[0];
-                    removeReason = 'самое старое (по умолчанию)';
+                    // По умолчанию удаляем самые старые
+                    for (let i = 0; i < messagesToRemove; i++) {
+                        messages[i].remove();
+                    }
                     break;
             }
             
-            if (messageToRemove) {
-                this.removeMessageWithAnimation(messageToRemove, `${removeReason} сообщение для освобождения места (попытка ${attempts + 1})`);
-                attempts++;
-            } else {
-                break;
-            }
-        }
-            
-        if (attempts > 0) {
-            console.log(`🗑️ Удалено ${attempts} сообщений, которые не помещались в контейнер`);
+            console.log(`🗑️ Удалено ${messagesToRemove} сообщений`);
             this.syncMessageCount();
         }
-        
-        // Разрешаем сообщениям выходить за рамки
-        chatContainer.style.overflow = 'visible';
-        
-        // Проверяем и удаляем сообщения, которые выходят за рамки на 10-20%
-        this.removeMessagesOutsideBounds();
     }
     
     removeMessagesOutsideBounds() {
         if (!this.chatMessagesElement) return;
         
-        const chatContainer = this.chatMessagesElement;
-        const containerRect = chatContainer.getBoundingClientRect();
-        const containerTop = containerRect.top;
-        const containerBottom = containerRect.bottom;
+        const container = this.chatMessagesElement;
+        const messages = container.querySelectorAll('.message');
         
-        const messages = this.chatMessagesElement.querySelectorAll('.message');
-            let removedCount = 0;
+        if (messages.length === 0) return;
         
-        // Определяем направление чата
-        const direction = this.settings.chatDirection;
+        // Получаем размеры контейнера
+        const containerRect = container.getBoundingClientRect();
+        const containerHeight = containerRect.height;
         
-        messages.forEach((message, index) => {
-                const messageRect = message.getBoundingClientRect();
-            const messageTop = messageRect.top;
-            const messageBottom = messageRect.bottom;
+        // Собираем сообщения, которые выходят за границы
+        const messagesToRemove = [];
+        
+        for (let i = 0; i < messages.length; i++) {
+            const message = messages[i];
+            const messageRect = message.getBoundingClientRect();
             
-            let shouldRemove = false;
-            let reason = '';
-            
-            switch (direction) {
-                case 'top-to-bottom-new-down':
-                    // Сверху вниз, новые уходят вниз: удаляем сообщения, которые выходят за нижнюю границу
-                    if (messageBottom > containerBottom) {
-                        shouldRemove = true;
-                        reason = 'выходит за нижнюю границу (новые вниз)';
-                    }
-                    break;
-                case 'top-to-bottom-old-down':
-                    // Сверху вниз, старые уходят вниз: удаляем сообщения, которые выходят за нижнюю границу
-                    if (messageBottom > containerBottom) {
-                        shouldRemove = true;
-                        reason = 'выходит за нижнюю границу (старые вниз)';
-                    }
-                    break;
-                case 'bottom-to-top-new-up':
-                    // Снизу вверх, новые уходят наверх: удаляем сообщения, которые выходят за верхнюю границу
-                    if (messageTop < containerTop) {
-                        shouldRemove = true;
-                        reason = 'выходит за верхнюю границу (новые наверх)';
-                    }
-                    break;
-                case 'bottom-to-top-old-up':
-                    // Снизу вверх, старые уходят наверх: удаляем сообщения, которые выходят за верхнюю границу
-                    if (messageTop < containerTop) {
-                        shouldRemove = true;
-                        reason = 'выходит за верхнюю границу (старые наверх)';
-                    }
-                    break;
-                default:
-                    // По умолчанию: удаляем сообщения, которые касаются любой границы
-                    if (messageTop < containerTop || messageBottom > containerBottom) {
-                        shouldRemove = true;
-                        reason = 'касается границы';
-                    }
-                    break;
+            // Проверяем, выходит ли сообщение за границы контейнера
+            // Добавляем небольшой отступ для более точной проверки
+            const padding = 5;
+            if (messageRect.bottom > (containerRect.bottom - padding) || messageRect.top < (containerRect.top + padding)) {
+                const messageTime = parseInt(message.getAttribute('data-time')) || 0;
+                messagesToRemove.push({
+                    element: message,
+                    index: i,
+                    rect: messageRect,
+                    time: messageTime
+                });
             }
-            
-            if (shouldRemove) {
-                this.removeMessageWithAnimation(message, `сообщение ${index + 1}, которое ${reason}`);
-                removedCount++;
-            }
-        });
-            
-            if (removedCount > 0) {
-            console.log(`🗑️ Удалено ${removedCount} сообщений (направление: ${this.settings.chatDirection})`);
-                this.syncMessageCount();
         }
+        
+        if (messagesToRemove.length === 0) return;
+        
+        // Сортируем сообщения по времени создания (самые старые первыми)
+        messagesToRemove.sort((a, b) => a.time - b.time);
+        
+        // Удаляем все старые сообщения, которые выходят за границы
+        // Продолжаем удалять до тех пор, пока все сообщения не влезут в контейнер
+        const minAgeToRemove = 2000; // Минимальный возраст сообщения для удаления (2 секунды)
+        
+        let removedCount = 0;
+        for (let i = 0; i < messagesToRemove.length; i++) {
+            const { element, time } = messagesToRemove[i];
+            const messageAge = Date.now() - time;
+            
+            // Удаляем только сообщения старше минимального возраста
+            if (messageAge >= minAgeToRemove) {
+                element.remove();
+                removedCount++;
+                console.log(`🗑️ [Основной чат] Удалено старое сообщение (возраст: ${Math.round(messageAge/1000)}с), выходящее за границы`);
+            }
+        }
+        
+        // Если после удаления все еще есть сообщения за границами, удаляем их тоже
+        if (removedCount > 0) {
+            // Проверяем еще раз после удаления
+            setTimeout(() => {
+                this.removeMessagesOutsideBounds();
+            }, 50);
+        }
+        
+        // Синхронизируем счетчик после удаления
+        this.syncMessageCount();
+    }
+    
+    ensureNewMessageFits() {
+        if (!this.chatMessagesElement) return;
+        
+        const container = this.chatMessagesElement;
+        const messages = container.querySelectorAll('.message');
+        
+        if (messages.length === 0) return;
+        
+        // Определяем новое сообщение в зависимости от направления чата
+        let newestMessage = null;
+        
+        switch (this.settings.chatDirection) {
+            case 'top-to-bottom-new-down':
+            case 'bottom-to-top-old-up':
+                // Новые сообщения добавляются в конец
+                newestMessage = messages[messages.length - 1];
+                break;
+            case 'top-to-bottom-old-down':
+            case 'bottom-to-top-new-up':
+                // Новые сообщения добавляются в начало
+                newestMessage = messages[0];
+                break;
+            default:
+                // По умолчанию последнее сообщение
+                newestMessage = messages[messages.length - 1];
+                break;
+        }
+        
+        if (!newestMessage) return;
+        
+        const containerRect = container.getBoundingClientRect();
+        const messageRect = newestMessage.getBoundingClientRect();
+        
+        // Проверяем, влезает ли новое сообщение полностью
+        const padding = 5;
+        const isFullyVisible = messageRect.top >= (containerRect.top + padding) && 
+                              messageRect.bottom <= (containerRect.bottom - padding);
+        
+        if (!isFullyVisible) {
+            console.log('📏 [Основной чат] Новое сообщение не влезает полностью, удаляем старые...');
+            
+            // Удаляем старые сообщения до тех пор, пока новое не влезет
+            this.removeOldMessagesUntilNewFits(newestMessage);
+        }
+    }
+    
+    removeOldMessagesUntilNewFits(newestMessage) {
+        if (!this.chatMessagesElement || !newestMessage) return;
+        
+        const container = this.chatMessagesElement;
+        const messages = container.querySelectorAll('.message');
+        const containerRect = container.getBoundingClientRect();
+        const messageRect = newestMessage.getBoundingClientRect();
+        
+        // Проверяем, влезает ли новое сообщение
+        const padding = 5;
+        const isFullyVisible = messageRect.top >= (containerRect.top + padding) && 
+                              messageRect.bottom <= (containerRect.bottom - padding);
+        
+        if (isFullyVisible) {
+            console.log('✅ [Основной чат] Новое сообщение теперь влезает полностью');
+            return;
+        }
+        
+        // Находим самое старое сообщение для удаления (исключая новое сообщение)
+        let oldestMessage = null;
+        let oldestTime = Date.now();
+        
+        for (let i = 0; i < messages.length; i++) {
+            const message = messages[i];
+            
+            // Пропускаем новое сообщение
+            if (message === newestMessage) continue;
+            
+            const messageTime = parseInt(message.getAttribute('data-time')) || 0;
+            const messageAge = Date.now() - messageTime;
+            
+            // Удаляем только сообщения старше 2 секунд
+            if (messageAge >= 2000 && messageTime < oldestTime) {
+                oldestMessage = message;
+                oldestTime = messageTime;
+            }
+        }
+        
+        if (oldestMessage) {
+            const messageAge = Date.now() - oldestTime;
+            oldestMessage.remove();
+            console.log(`🗑️ [Основной чат] Удалено старое сообщение (возраст: ${Math.round(messageAge/1000)}с) для освобождения места`);
+            
+            // Прокручиваем к новому сообщению после удаления
+            setTimeout(() => {
+                this.scrollChatToNewMessages();
+                this.removeOldMessagesUntilNewFits(newestMessage);
+            }, 50);
+        } else {
+            console.log('⚠️ [Основной чат] Нет старых сообщений для удаления');
+            // Даже если нет старых сообщений, убеждаемся что новое видно
+            setTimeout(() => {
+                this.scrollChatToNewMessages();
+            }, 50);
+        }
+        
+        this.syncMessageCount();
     }
     
     updateExistingMessages() {
@@ -2067,9 +2166,8 @@ class TwitchChat {
             // Применяем эффекты текста к сообщению
             this.applyTextEffectsToMessage(message);
             
-            // Применяем расстояние между сообщениями и смещение по вертикали
+            // Применяем расстояние между сообщениями
             message.style.marginBottom = this.settings.messageSpacing + 'px';
-            message.style.transform = `translateY(${this.settings.messageVerticalOffset}px)`;
             
             // Обновляем выравнивание сообщения
             message.className = message.className.replace(/align-\w+/g, '');
@@ -2309,9 +2407,8 @@ class TwitchChat {
         // Применяем эффекты текста к сообщению
         this.applyTextEffectsToMessage(messageElement);
         
-        // Применяем расстояние между сообщениями и смещение по вертикали
+        // Применяем расстояние между сообщениями
         messageElement.style.marginBottom = this.settings.messageSpacing + 'px';
-        messageElement.style.transform = `translateY(${this.settings.messageVerticalOffset}px)`;
         
         // Определяем цвет пользователя
         const userColor = userData.color || this.getDefaultUserColor(username);
@@ -2381,8 +2478,13 @@ class TwitchChat {
         this.syncMessageCount();
         this.limitChatMessages();
         
-        // Прокручиваем вниз
-        this.chatMessagesElement.scrollTop = this.chatMessagesElement.scrollHeight;
+        // Прокручиваем к новым сообщениям в зависимости от направления чата
+        this.scrollChatToNewMessages();
+        
+        // Проверяем, что новое сообщение влезает полностью
+        setTimeout(() => {
+            this.ensureNewMessageFits();
+        }, 100);
     }
     
     getDefaultUserColor(username) {
@@ -3705,16 +3807,18 @@ class TwitchChat {
             this.channelAvatars = new Map();
         }
         
+        const lowerChannelName = channelName.toLowerCase();
+        
         // Если аватарка уже загружена, возвращаем её
-        if (this.channelAvatars.has(channelName)) {
-            return this.channelAvatars.get(channelName);
+        if (this.channelAvatars.has(lowerChannelName)) {
+            return this.channelAvatars.get(lowerChannelName);
         }
         
         // Загружаем аватарку канала
         this.loadChannelAvatar(channelName);
         
-        // Возвращаем временную иконку
-        return `<img class="channel-avatar" src="https://static-cdn.jtvnw.net/jtv_user_pictures/${channelName}-profile_image-70x70.png" alt="${channelName}" title="${channelName}" style="width: 1.3em; height: 1.3em; border-radius: 50%; vertical-align: middle; margin-right: 2px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" /><span style="display: none;">📺</span>`;
+        // Возвращаем временную иконку с fallback
+        return `<img class="channel-avatar" src="https://static-cdn.jtvnw.net/jtv_user_pictures/${channelName}-profile_image-70x70.png" alt="${channelName}" title="Канал: ${channelName}" style="width: 1.3em; height: 1.3em; border-radius: 50%; vertical-align: middle; margin-right: 2px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" /><span class="channel-avatar-fallback" style="display:none; font-size: 1.3em; align-items: center; justify-content: center;">📺</span>`;
     }
     
     // Функция для определения общего чата и получения информации о каналах-участниках
@@ -3842,9 +3946,30 @@ class TwitchChat {
         
         for (const channel of channels) {
             try {
-                const avatarUrl = `https://static-cdn.jtvnw.net/jtv_user_pictures/${channel}-profile_image-70x70.png`;
-                this.channelAvatars.set(channel.toLowerCase(), avatarUrl);
-                console.log(`✅ Аватарка загружена для ${channel}:`, avatarUrl);
+                // Используем API для получения актуальной аватарки
+                const response = await fetch(`https://api.twitch.tv/helix/users?login=${channel}`, {
+                    headers: {
+                        'Client-ID': this.twitchClientId
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.data && data.data.length > 0) {
+                        const user = data.data[0];
+                        const avatarUrl = user.profile_image_url;
+                        
+                        // Сохраняем полный HTML с аватаркой
+                        this.channelAvatars.set(channel.toLowerCase(), 
+                            `<img class="channel-avatar" src="${avatarUrl}" alt="${channel}" title="Канал: ${channel}" style="width: 1.3em; height: 1.3em; border-radius: 50%; vertical-align: middle; margin-right: 2px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" /><span class="channel-avatar-fallback" style="display:none; font-size: 1.3em; align-items: center; justify-content: center;">📺</span>`
+                        );
+                        console.log(`✅ Аватарка загружена для ${channel}:`, avatarUrl);
+                    } else {
+                        console.warn(`⚠️ Пользователь не найден: ${channel}`);
+                    }
+                } else {
+                    console.warn(`⚠️ Ошибка API для ${channel}:`, response.status);
+                }
             } catch (error) {
                 console.error(`❌ Ошибка загрузки аватарки для ${channel}:`, error);
             }
@@ -4059,6 +4184,8 @@ class TwitchChat {
     // Загрузка аватарки канала
     async loadChannelAvatar(channelName) {
         try {
+            console.log('🖼️ Загружаем аватарку для канала:', channelName);
+            
             const response = await fetch(`https://api.twitch.tv/helix/users?login=${channelName}`, {
                 headers: {
                     'Client-ID': this.twitchClientId
@@ -4071,27 +4198,46 @@ class TwitchChat {
                     const user = data.data[0];
                     const avatarUrl = user.profile_image_url;
                     
+                    const lowerChannelName = channelName.toLowerCase();
+                    
                     // Сохраняем аватарку в кэш
-                    this.channelAvatars.set(channelName, 
-                        `<img class="channel-avatar" src="${avatarUrl}" alt="${channelName}" title="${channelName}" style="width: 1.3em; height: 1.3em; border-radius: 50%; vertical-align: middle; margin-right: 2px; object-fit: cover;" />`
+                    this.channelAvatars.set(lowerChannelName, 
+                        `<img class="channel-avatar" src="${avatarUrl}" alt="${channelName}" title="Канал: ${channelName}" style="width: 1.3em; height: 1.3em; border-radius: 50%; vertical-align: middle; margin-right: 2px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" /><span class="channel-avatar-fallback" style="display:none; font-size: 1.3em; align-items: center; justify-content: center;">📺</span>`
                     );
                     
+                    console.log('✅ Аватарка загружена и сохранена в кэш для:', channelName, avatarUrl);
+                    
                     // Обновляем все сообщения с этим каналом
-                    this.updateChannelAvatars(channelName);
+                    this.updateChannelAvatars(lowerChannelName);
+                } else {
+                    console.warn('⚠️ Пользователь не найден:', channelName);
                 }
+            } else {
+                console.warn('⚠️ Ошибка API при загрузке аватарки:', response.status, channelName);
             }
         } catch (error) {
-            console.warn('Ошибка загрузки аватарки канала:', channelName, error);
+            console.warn('❌ Ошибка загрузки аватарки канала:', channelName, error);
         }
     }
     
     // Обновление аватарок канала в существующих сообщениях
     updateChannelAvatars(channelName) {
+        console.log('🔄 Обновляем аватарки для канала:', channelName);
+        
+        if (!this.chatMessagesElement) {
+            console.warn('⚠️ chatMessagesElement не найден');
+            return;
+        }
+        
         const messages = this.chatMessagesElement.querySelectorAll(`[data-source-channel="${channelName}"]`);
+        console.log(`📝 Найдено ${messages.length} сообщений для обновления`);
+        
         messages.forEach(message => {
             const channelBadge = message.querySelector('.channel-badge');
-            if (channelBadge) {
-                channelBadge.innerHTML = this.channelAvatars.get(channelName);
+            if (channelBadge && this.channelAvatars.has(channelName)) {
+                const newAvatar = this.channelAvatars.get(channelName);
+                channelBadge.innerHTML = newAvatar;
+                console.log('✅ Аватарка обновлена в сообщении');
             }
         });
     }

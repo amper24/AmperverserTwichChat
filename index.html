@@ -9,22 +9,22 @@
 <body>
     <div class="editor-container">
         <div class="editor-header">
-            <h1>🎮 Amperverser Chat</h1>
+            <h1>🎮 Amperverser Chat V1.2</h1>
         </div>
         
         <div class="editor-content">
             <div class="settings-panel">
                 <div class="settings-nav">
-                    <button class="nav-btn active" data-section="basic">Основные</button>
-                    <button class="nav-btn" data-section="border">🎨 Рамка</button>
-                    <button class="nav-btn" data-section="background">🖼️ Фон</button>
-                    <button class="nav-btn" data-section="layout">📐 Макет</button>
-                    <button class="nav-btn" data-section="display">👁️ Отображение</button>
-                    <button class="nav-btn" data-section="animations">Анимации</button>
-                    <button class="nav-btn" data-section="messages">Сообщения</button>
-                    <button class="nav-btn" data-section="moderation">🛡️ Модерация</button>
-                    <button class="nav-btn" data-section="fonts">🔤 Шрифты</button>
-                    <button class="nav-btn" data-section="obs">OBS</button>
+                    <button class="nav-btn active" data-section="basic" title="Основные настройки">⚙️</button>
+                    <button class="nav-btn" data-section="border" title="Настройки рамки">🎨</button>
+                    <button class="nav-btn" data-section="background" title="Настройки фона">🖼️</button>
+                    <button class="nav-btn" data-section="layout" title="Настройки макета">📐</button>
+                    <button class="nav-btn" data-section="display" title="Настройки отображения">👁️</button>
+                    <button class="nav-btn" data-section="animations" title="Настройки анимаций">✨</button>
+                    <button class="nav-btn" data-section="messages" title="Настройки сообщений">💬</button>
+                    <button class="nav-btn" data-section="moderation" title="Настройки модерации">🛡️</button>
+                    <button class="nav-btn" data-section="fonts" title="Настройки шрифтов">🔤</button>
+                    <button class="nav-btn" data-section="obs" title="Настройки OBS">📺</button>
                 </div>
                 
                 <div class="setting-group" data-section="basic">
@@ -32,8 +32,8 @@
                     <div class="setting-item">
                         <label for="channel-input">Название канала:</label>
                         <input type="text" id="channel-input" placeholder="Введите название канала" value="">
-                        <button id="save-channel" class="save-btn">💾 Сохранить</button>
-                        <button id="reconnect-btn" class="reconnect-btn">🔄 Переподключить</button>
+                        <button id="save-channel" class="save-btn">✅</button>
+                        <button id="reconnect-btn" class="reconnect-btn">🔌</button>
                     </div>
                     <div class="setting-item">
                         <h4>🧪 Тестирование общего чата</h4>
@@ -42,8 +42,8 @@
                             <input type="text" id="shared-channels-input" placeholder="crileaf, moonaticks, channel3" value="crileaf, moonaticks" style="width: 100%; margin-bottom: 10px;">
                             <p style="font-size: 0.7em; color: #666; margin: 0;">Можно указать от 2 до 5 каналов, разделенных запятыми</p>
                         </div>
-                        <button id="test-shared-chat" class="save-btn">🎯 Тест общего чата</button>
-                        <button id="stop-shared-chat-test" class="save-btn" style="display: none; background-color: #ff4444;">⏹️ Остановить тест</button>
+                        <button id="test-shared-chat" class="save-btn">🚀</button>
+                        <button id="stop-shared-chat-test" class="save-btn" style="display: none; background-color: #ff4444;">🛑</button>
                         <p style="font-size: 0.8em; color: #888; margin-top: 5px;">
                             Создает тестовый общий чат с указанными каналами для демонстрации аватарок каналов
                         </p>
@@ -945,7 +945,7 @@
                 </div>
             </div>
             
-                <div class="preview-panel">
+            <div class="preview-panel">
                 <h3>👀 Предпросмотр</h3>
                 <div class="preview-controls">
                     <button id="connect-preview-btn" class="connect-preview-btn">🔗 Подключить к чату</button>
@@ -964,13 +964,18 @@
                 <div class="obs-info">
                     <h4>📺 Информация для OBS</h4>
                     <p><strong>Размер для OBS:</strong> <span id="obs-size">800x600</span></p>
-                    <p><strong>URL для OBS:</strong> <a id="obs-url" href="#" target="_blank">Загрузка...</a></p>
                     <div class="obs-buttons">
                         <button id="copy-url-btn" class="copy-btn">📋 Копировать URL</button>
                         <button id="open-chat-btn" class="open-chat-btn">🎮 Открыть чат</button>
-                        <button id="refresh-preview-btn" class="refresh-btn">🔄 Обновить предпросмотр</button>
+                        <button id="refresh-preview-btn" class="refresh-btn">🔄 Обновить</button>
+                    </div>
+                    <div class="obs-url-section">
+                        <p><strong>URL для OBS:</strong></p>
+                        <a id="obs-url" href="#" target="_blank">Загрузка...</a>
                     </div>
                 </div>
+            </div>
+        </div>
             </div>
         </div>
         

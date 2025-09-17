@@ -29,6 +29,7 @@ body {
     width: 100%;
     min-width: 300px;
     min-height: 200px;
+    max-height: 100vh; /* Ограничиваем высоту для корректной прокрутки */
     background: var(--fallback-bg, transparent);
     backdrop-filter: none;
     border: 3px solid #9146ff;
@@ -40,6 +41,12 @@ body {
     background-position: center;
     background-repeat: no-repeat;
     /* Размеры будут устанавливаться динамически через JavaScript */
+}
+
+/* Когда есть фоновое изображение, основной контейнер должен быть прозрачным */
+.chat-container:has(.background-overlay) {
+    background: transparent !important;
+    background-color: transparent !important;
 }
 
 .chat-container.no-border {
@@ -75,7 +82,7 @@ body {
     flex: 1;
     padding: 20px;
     overflow-y: auto;
-    overflow-x: visible; /* Разрешаем сообщениям выходить за границы по горизонтали */
+    overflow-x: hidden; /* Скрываем горизонтальную прокрутку */
     display: flex;
     flex-direction: column;
     background: transparent;
@@ -83,6 +90,7 @@ body {
     /* Скрываем полосы прокрутки для чистого вида */
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE and Edge */
+    position: relative; /* Для корректного позиционирования */
 }
 
 /* Скрываем полосы прокрутки в WebKit браузерах */
@@ -619,6 +627,21 @@ body {
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
     margin-right: 2px;
     object-fit: cover;
+}
+
+.channel-avatar-fallback {
+    width: 1.3em;
+    height: 1.3em;
+    border-radius: 50%;
+    vertical-align: middle;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+    margin-right: 2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(100, 100, 100, 0.3);
+    font-size: 0.8em;
 }
 
 /* Стили для эмодзи (7TV, BTTV, FFZ) */

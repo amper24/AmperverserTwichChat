@@ -95,6 +95,14 @@ class ChatEditor {
         this.setupNavigation();
         this.initializeGoogleFonts();
         this.updatePreview();
+        
+        // Добавляем обработчик изменения размера окна
+        window.addEventListener('resize', () => {
+            // Небольшая задержка, чтобы изменения размера успели примениться
+            setTimeout(() => {
+                this.limitPreviewMessages();
+            }, 100);
+        });
     }
     
     
@@ -1034,6 +1042,7 @@ class ChatEditor {
             this.refreshPreview();
         });
         
+        
         // Подключение к реальному чату
         this.elements.connectPreviewBtn.addEventListener('click', () => {
             this.connectPreviewToChat();
@@ -1569,6 +1578,13 @@ class ChatEditor {
         this.elements.chatPreview.style.width = this.settings.chatWidth + 'px';
         this.elements.chatPreview.style.height = this.settings.chatHeight + 'px';
         
+        // Применяем размеры к внутреннему контейнеру предпросмотра
+        const previewContainer = this.elements.chatPreview.querySelector('.preview-chat-container');
+        if (previewContainer) {
+            previewContainer.style.width = this.settings.chatWidth + 'px';
+            previewContainer.style.height = this.settings.chatHeight + 'px';
+        }
+        
         // Применяем настройки к предпросмотру
         this.applyPreviewSettings();
         
@@ -1675,27 +1691,14 @@ class ChatEditor {
                 container.style.position = 'relative';
                 container.style.backdropFilter = 'blur(10px)';
                 
-                // Если есть градиент, комбинируем его с фоновым изображением
-                if (this.settings.backgroundGradient !== 'none') {
-                    // Применяем прозрачность к цветам градиента
-                    const color1WithOpacity = this.hexToRgba(this.settings.gradientColor1, opacity);
-                    const color2WithOpacity = this.hexToRgba(this.settings.gradientColor2, opacity);
-                    
-                    const gradient = this.createGradient(
-                        this.settings.backgroundGradient,
-                        color1WithOpacity,
-                        color2WithOpacity,
-                        this.settings.gradientDirection
-                    );
-                    container.style.background = `${gradient}, url(${this.settings.backgroundImage})`;
-                } else {
-                    container.style.background = `rgba(255, 255, 255, ${opacity * 0.05})`;
-                    container.style.backgroundImage = `url(${this.settings.backgroundImage})`;
-                }
-                
-                container.style.backgroundSize = this.settings.backgroundSize;
-                container.style.backgroundPosition = this.settings.backgroundPosition;
-                container.style.backgroundRepeat = 'no-repeat';
+                // Убираем фоновое изображение с основного контейнера и делаем его полностью прозрачным
+                container.style.background = 'transparent';
+                container.style.backgroundImage = '';
+                container.style.backgroundSize = '';
+                container.style.backgroundPosition = '';
+                container.style.backgroundRepeat = '';
+                container.style.backgroundColor = 'transparent';
+                container.style.setProperty('--fallback-bg', 'transparent');
                 
                 // Удаляем старый псевдоэлемент если есть
                 const oldOverlay = container.querySelector('.background-overlay');
@@ -1706,19 +1709,40 @@ class ChatEditor {
                 // Создаем новый псевдоэлемент для прозрачности
                 const overlay = document.createElement('div');
                 overlay.className = 'background-overlay';
-                overlay.style.cssText = `
+                
+                // Устанавливаем фоновое изображение на overlay
+                overlay.style.backgroundImage = `url(${this.settings.backgroundImage})`;
+                overlay.style.backgroundSize = this.settings.backgroundSize;
+                overlay.style.backgroundPosition = this.settings.backgroundPosition;
+                overlay.style.backgroundRepeat = 'no-repeat';
+                
+                // Если есть градиент, комбинируем его с фоновым изображением
+                if (this.settings.backgroundGradient !== 'none') {
+                    // Не применяем прозрачность к цветам градиента - используем общую прозрачность
+                    const gradient = this.createGradient(
+                        this.settings.backgroundGradient,
+                        this.settings.gradientColor1,
+                        this.settings.gradientColor2,
+                        this.settings.gradientDirection
+                    );
+                    overlay.style.background = `${gradient}, url(${this.settings.backgroundImage})`;
+                } else {
+                    // Не применяем прозрачность к цвету фона - используем общую прозрачность
+                    overlay.style.background = `${this.settings.backgroundColor}, url(${this.settings.backgroundImage})`;
+                }
+                
+                // Применяем общую прозрачность к overlay
+                overlay.style.opacity = opacity;
+                
+                overlay.style.cssText += `
                     position: absolute;
                     top: 0;
                     left: 0;
                     right: 0;
                     bottom: 0;
-                    background-image: url(${this.settings.backgroundImage});
-                    background-size: ${this.settings.backgroundSize};
-                    background-position: ${this.settings.backgroundPosition};
-                    background-repeat: no-repeat;
-                    opacity: ${opacity};
                     pointer-events: none;
                     z-index: -1;
+                    border-radius: inherit;
                 `;
                 container.appendChild(overlay);
             } else {
@@ -1985,9 +2009,8 @@ class ChatEditor {
         messageElement.style.overflowWrap = 'break-word';
         messageElement.style.hyphens = 'auto';
         
-        // Применяем расстояние между сообщениями и смещение по вертикали
+        // Применяем расстояние между сообщениями
         messageElement.style.marginBottom = this.settings.messageSpacing + 'px';
-        messageElement.style.transform = `translateY(${this.settings.messageVerticalOffset}px)`;
         
         // Определяем цвет пользователя
         const userColor = userData.color || this.getDefaultUserColor(username);
@@ -2060,9 +2083,12 @@ class ChatEditor {
                     messageToRemove = messages[0];
                     break;
                 case 'top-to-bottom-old-down':
-                case 'bottom-to-top-old-up':
-                    // Удаляем самое новое (последнее) сообщение
+                    // Старые уходят вниз - удаляем последнее (самое старое внизу)
                     messageToRemove = messages[messages.length - 1];
+                    break;
+                case 'bottom-to-top-old-up':
+                    // Старые уходят наверх - удаляем первое (самое старое наверху)
+                    messageToRemove = messages[0];
                     break;
                 default:
                     // По умолчанию удаляем самое старое
@@ -2075,11 +2101,52 @@ class ChatEditor {
             }
         }
         
-        // Прокручиваем вниз
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        // Прокручиваем к новым сообщениям в зависимости от направления чата
+        this.scrollPreviewToNewMessages();
+        
+        // Проверяем, что новое сообщение влезает полностью
+        setTimeout(() => {
+            this.ensureNewMessageFits();
+        }, 100);
     }
     
-    
+    scrollPreviewToNewMessages() {
+        const messagesContainer = this.elements.previewChatMessages;
+        if (!messagesContainer) return;
+        
+        // Используем requestAnimationFrame для плавной прокрутки
+        requestAnimationFrame(() => {
+            switch (this.settings.chatDirection) {
+                case 'top-to-bottom-new-down':
+                    // Новые вниз - прокручиваем вниз к новым сообщениям
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    break;
+                case 'top-to-bottom-old-down':
+                    // Старые вниз - новые сверху, прокручиваем вверх к новым
+                    messagesContainer.scrollTop = 0;
+                    break;
+                case 'bottom-to-top-new-up':
+                    // Новые наверх - прокручиваем вверх к новым сообщениям
+                    messagesContainer.scrollTop = 0;
+                    break;
+                case 'bottom-to-top-old-up':
+                    // Старые наверх - новые снизу, прокручиваем вниз к новым
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    break;
+                default:
+                    // По умолчанию прокручиваем вниз
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    break;
+            }
+            
+            // После прокрутки проверяем границы и удаляем сообщения, которые не влезают
+            setTimeout(() => {
+                this.removePreviewMessagesOutsideBounds();
+                // Дополнительно проверяем, что новое сообщение видно
+                this.ensureNewMessageFits();
+            }, 100);
+        });
+    }
     
     
     getAnimationName(animationType) {
@@ -2645,6 +2712,7 @@ class ChatEditor {
     
     updateOBSURL() {
         const chatURL = this.generateChatURL();
+        this.elements.obsUrl.href = chatURL;
         this.elements.obsUrl.textContent = chatURL;
     }
     
@@ -2672,6 +2740,7 @@ class ChatEditor {
             this.showStatus('📋 URL скопирован в буфер обмена', 'success');
         }
     }
+    
     
     openChat() {
         if (!this.settings.channel) {
@@ -3513,117 +3582,229 @@ class ChatEditor {
         if (!this.elements.previewChatMessages) return;
         
         const messages = this.elements.previewChatMessages.querySelectorAll('.preview-message');
-        const maxMessages = this.settings.maxMessages || 100; // Используем настройку maxMessages
+        const maxMessages = this.settings.maxMessages || 100;
         
+        // Проверяем, не выходят ли сообщения за границы контейнера
+        this.removePreviewMessagesOutsideBounds();
+        
+        // Если сообщений больше лимита, удаляем в зависимости от направления чата
         if (messages.length > maxMessages) {
-            // Удаляем сообщения в зависимости от направления чата
             const messagesToRemove = messages.length - maxMessages;
-            for (let i = 0; i < messagesToRemove; i++) {
-                let messageToRemove = null;
-                
-                switch (this.settings.chatDirection) {
-                    case 'top-to-bottom-new-down':
-                    case 'bottom-to-top-new-up':
-                        // Удаляем самые старые (первые) сообщения
-                        messageToRemove = messages[i];
-                        break;
-                    case 'top-to-bottom-old-down':
-                    case 'bottom-to-top-old-up':
-                        // Удаляем самые новые (последние) сообщения
-                        messageToRemove = messages[messages.length - 1 - i];
-                        break;
-                    default:
-                        // По умолчанию удаляем самые старые
-                        messageToRemove = messages[i];
-                        break;
-                }
-                
-                if (messageToRemove) {
-                    messageToRemove.remove();
-                }
+            
+            switch (this.settings.chatDirection) {
+                case 'top-to-bottom-new-down':
+                case 'bottom-to-top-new-up':
+                    // Удаляем самые старые (первые) сообщения
+                    for (let i = 0; i < messagesToRemove; i++) {
+                        const messageToRemove = messages[i];
+                        if (messageToRemove) {
+                            messageToRemove.remove();
+                        }
+                    }
+                    break;
+                case 'top-to-bottom-old-down':
+                    // Старые уходят вниз - удаляем последние (самые старые внизу)
+                    for (let i = messages.length - 1; i >= messages.length - messagesToRemove; i--) {
+                        const messageToRemove = messages[i];
+                        if (messageToRemove) {
+                            messageToRemove.remove();
+                        }
+                    }
+                    break;
+                case 'bottom-to-top-old-up':
+                    // Старые уходят наверх - удаляем первые (самые старые наверху)
+                    for (let i = 0; i < messagesToRemove; i++) {
+                        const messageToRemove = messages[i];
+                        if (messageToRemove) {
+                            messageToRemove.remove();
+                        }
+                    }
+                    break;
+                default:
+                    // По умолчанию удаляем самые старые
+                    for (let i = 0; i < messagesToRemove; i++) {
+                        const messageToRemove = messages[i];
+                        if (messageToRemove) {
+                            messageToRemove.remove();
+                        }
+                    }
+                    break;
             }
+            
             this.syncPreviewMessageCount();
         }
-        
-        // Агрессивная проверка: удаляем сообщения пока они не помещаются в контейнер
-        const chatContainer = this.elements.previewChatMessages;
-        const containerHeight = chatContainer.clientHeight;
-        
-        // Проверяем и удаляем сообщения, которые выходят за рамки на 10-20%
-        this.removePreviewMessagesOutsideBounds();
     }
     
     removePreviewMessagesOutsideBounds() {
         if (!this.elements.previewChatMessages) return;
         
-        const chatContainer = this.elements.previewChatMessages;
-        const containerRect = chatContainer.getBoundingClientRect();
-        const containerTop = containerRect.top;
-        const containerBottom = containerRect.bottom;
+        const container = this.elements.previewChatMessages;
+        const messages = container.querySelectorAll('.preview-message');
         
-        const messages = chatContainer.querySelectorAll('.preview-message');
-        let removedCount = 0;
+        if (messages.length === 0) return;
         
-        // Определяем направление чата
-        const direction = this.settings.chatDirection;
+        // Получаем размеры контейнера
+        const containerRect = container.getBoundingClientRect();
+        const containerHeight = containerRect.height;
         
-        messages.forEach((message, index) => {
+        // Собираем сообщения, которые выходят за границы
+        const messagesToRemove = [];
+        
+        for (let i = 0; i < messages.length; i++) {
+            const message = messages[i];
             const messageRect = message.getBoundingClientRect();
-            const messageTop = messageRect.top;
-            const messageBottom = messageRect.bottom;
             
-            let shouldRemove = false;
-            let reason = '';
-            
-            switch (direction) {
-                case 'top-to-bottom-new-down':
-                    // Сверху вниз, новые уходят вниз: удаляем сообщения, которые выходят за нижнюю границу
-                    if (messageBottom > containerBottom) {
-                        shouldRemove = true;
-                        reason = 'выходит за нижнюю границу (новые вниз)';
-                    }
-                    break;
-                case 'top-to-bottom-old-down':
-                    // Сверху вниз, старые уходят вниз: удаляем сообщения, которые выходят за нижнюю границу
-                    if (messageBottom > containerBottom) {
-                        shouldRemove = true;
-                        reason = 'выходит за нижнюю границу (старые вниз)';
-                    }
-                    break;
-                case 'bottom-to-top-new-up':
-                    // Снизу вверх, новые уходят наверх: удаляем сообщения, которые выходят за верхнюю границу
-                    if (messageTop < containerTop) {
-                        shouldRemove = true;
-                        reason = 'выходит за верхнюю границу (новые наверх)';
-                    }
-                    break;
-                case 'bottom-to-top-old-up':
-                    // Снизу вверх, старые уходят наверх: удаляем сообщения, которые выходят за верхнюю границу
-                    if (messageTop < containerTop) {
-                        shouldRemove = true;
-                        reason = 'выходит за верхнюю границу (старые наверх)';
-                    }
-                    break;
-                default:
-                    // По умолчанию: удаляем сообщения, которые касаются любой границы
-                    if (messageTop < containerTop || messageBottom > containerBottom) {
-                        shouldRemove = true;
-                        reason = 'касается границы';
-                    }
-                    break;
+            // Проверяем, выходит ли сообщение за границы контейнера
+            // Добавляем небольшой отступ для более точной проверки
+            const padding = 5;
+            if (messageRect.bottom > (containerRect.bottom - padding) || messageRect.top < (containerRect.top + padding)) {
+                const messageTime = parseInt(message.getAttribute('data-time')) || 0;
+                messagesToRemove.push({
+                    element: message,
+                    index: i,
+                    rect: messageRect,
+                    time: messageTime
+                });
             }
-            
-            if (shouldRemove) {
-                console.log(`🗑️ Удалено сообщение предпросмотра ${index + 1}, которое ${reason}`);
-                message.remove();
-                removedCount++;
-            }
-        });
-        
-        if (removedCount > 0) {
-            console.log(`🗑️ Удалено ${removedCount} сообщений предпросмотра (направление: ${this.settings.chatDirection})`);
-            this.syncPreviewMessageCount();
         }
+        
+        if (messagesToRemove.length === 0) return;
+        
+        // Сортируем сообщения по времени создания (самые старые первыми)
+        messagesToRemove.sort((a, b) => a.time - b.time);
+        
+        // Удаляем все старые сообщения, которые выходят за границы
+        // Продолжаем удалять до тех пор, пока все сообщения не влезут в контейнер
+        const minAgeToRemove = 2000; // Минимальный возраст сообщения для удаления (2 секунды)
+        
+        let removedCount = 0;
+        for (let i = 0; i < messagesToRemove.length; i++) {
+            const { element, time } = messagesToRemove[i];
+            const messageAge = Date.now() - time;
+            
+            // Удаляем только сообщения старше минимального возраста
+            if (messageAge >= minAgeToRemove) {
+                element.remove();
+                removedCount++;
+                console.log(`🗑️ [Предпросмотр] Удалено старое сообщение (возраст: ${Math.round(messageAge/1000)}с), выходящее за границы`);
+            }
+        }
+        
+        // Если после удаления все еще есть сообщения за границами, удаляем их тоже
+        if (removedCount > 0) {
+            // Проверяем еще раз после удаления
+            setTimeout(() => {
+                this.removePreviewMessagesOutsideBounds();
+            }, 50);
+        }
+        
+        // Синхронизируем счетчик после удаления
+        this.syncPreviewMessageCount();
+    }
+    
+    ensureNewMessageFits() {
+        if (!this.elements.previewChatMessages) return;
+        
+        const container = this.elements.previewChatMessages;
+        const messages = container.querySelectorAll('.preview-message');
+        
+        if (messages.length === 0) return;
+        
+        // Определяем новое сообщение в зависимости от направления чата
+        let newestMessage = null;
+        
+        switch (this.settings.chatDirection) {
+            case 'top-to-bottom-new-down':
+            case 'bottom-to-top-old-up':
+                // Новые сообщения добавляются в конец
+                newestMessage = messages[messages.length - 1];
+                break;
+            case 'top-to-bottom-old-down':
+            case 'bottom-to-top-new-up':
+                // Новые сообщения добавляются в начало
+                newestMessage = messages[0];
+                break;
+            default:
+                // По умолчанию последнее сообщение
+                newestMessage = messages[messages.length - 1];
+                break;
+        }
+        
+        if (!newestMessage) return;
+        
+        const containerRect = container.getBoundingClientRect();
+        const messageRect = newestMessage.getBoundingClientRect();
+        
+        // Проверяем, влезает ли новое сообщение полностью
+        const padding = 5;
+        const isFullyVisible = messageRect.top >= (containerRect.top + padding) && 
+                              messageRect.bottom <= (containerRect.bottom - padding);
+        
+        if (!isFullyVisible) {
+            console.log('📏 [Предпросмотр] Новое сообщение не влезает полностью, удаляем старые...');
+            
+            // Удаляем старые сообщения до тех пор, пока новое не влезет
+            this.removeOldMessagesUntilNewFits(newestMessage);
+        }
+    }
+    
+    removeOldMessagesUntilNewFits(newestMessage) {
+        if (!this.elements.previewChatMessages || !newestMessage) return;
+        
+        const container = this.elements.previewChatMessages;
+        const messages = container.querySelectorAll('.preview-message');
+        const containerRect = container.getBoundingClientRect();
+        const messageRect = newestMessage.getBoundingClientRect();
+        
+        // Проверяем, влезает ли новое сообщение
+        const padding = 5;
+        const isFullyVisible = messageRect.top >= (containerRect.top + padding) && 
+                              messageRect.bottom <= (containerRect.bottom - padding);
+        
+        if (isFullyVisible) {
+            console.log('✅ [Предпросмотр] Новое сообщение теперь влезает полностью');
+            return;
+        }
+        
+        // Находим самое старое сообщение для удаления (исключая новое сообщение)
+        let oldestMessage = null;
+        let oldestTime = Date.now();
+        
+        for (let i = 0; i < messages.length; i++) {
+            const message = messages[i];
+            
+            // Пропускаем новое сообщение
+            if (message === newestMessage) continue;
+            
+            const messageTime = parseInt(message.getAttribute('data-time')) || 0;
+            const messageAge = Date.now() - messageTime;
+            
+            // Удаляем только сообщения старше 2 секунд
+            if (messageAge >= 2000 && messageTime < oldestTime) {
+                oldestMessage = message;
+                oldestTime = messageTime;
+            }
+        }
+        
+        if (oldestMessage) {
+            const messageAge = Date.now() - oldestTime;
+            oldestMessage.remove();
+            console.log(`🗑️ [Предпросмотр] Удалено старое сообщение (возраст: ${Math.round(messageAge/1000)}с) для освобождения места`);
+            
+            // Прокручиваем к новому сообщению после удаления
+            setTimeout(() => {
+                this.scrollPreviewToNewMessages();
+                this.removeOldMessagesUntilNewFits(newestMessage);
+            }, 50);
+        } else {
+            console.log('⚠️ [Предпросмотр] Нет старых сообщений для удаления');
+            // Даже если нет старых сообщений, убеждаемся что новое видно
+            setTimeout(() => {
+                this.scrollPreviewToNewMessages();
+            }, 50);
+        }
+        
+        this.syncPreviewMessageCount();
     }
 
     updateExistingPreviewMessages() {
@@ -3651,9 +3832,8 @@ class ChatEditor {
             message.style.overflowWrap = 'break-word';
             message.style.hyphens = 'auto';
             
-            // Применяем расстояние между сообщениями и смещение по вертикали
+            // Применяем расстояние между сообщениями
             message.style.marginBottom = this.settings.messageSpacing + 'px';
-            message.style.transform = `translateY(${this.settings.messageVerticalOffset}px)`;
             
             // Обновляем выравнивание сообщения
             message.className = message.className.replace(/align-\w+/g, '');
@@ -4030,6 +4210,14 @@ class ChatEditor {
                     color: '#E91E63',
                     badges: ['sub-gift-leader/1']
                 } 
+            },
+            { 
+                username: 'LongMessageTester', 
+                text: 'Это супер длинное тестовое сообщение для проверки переносов текста в чате! Оно содержит очень много слов и должно корректно переноситься на новые строки, демонстрируя работу системы переносов. Сообщение включает в себя различные символы, эмодзи 🎮🎉✨ и длинные слова для максимальной проверки функциональности переносов текста в интерфейсе чата!', 
+                userData: { 
+                    color: '#9C27B0',
+                    badges: ['subscriber/12']
+                } 
             }
         ];
         
@@ -4120,6 +4308,12 @@ class ChatEditor {
             this.previewChatInstance.settings = { ...this.settings };
             this.previewChatInstance.applySettings();
             console.log('Настройки синхронизированы с чатом предпросмотра');
+        }
+        
+        // Применяем смещение по вертикали к контейнеру сообщений
+        if (this.elements.previewChatMessages) {
+            this.elements.previewChatMessages.style.transform = `translateY(${this.settings.messageVerticalOffset}px)`;
+            console.log(`Применено смещение по вертикали: ${this.settings.messageVerticalOffset}px`);
         }
         
         // Также применяем настройки к предпросмотру напрямую
